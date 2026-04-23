@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  autoqui-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autoqui-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    networks:
+      - autoqui-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  autoqui-net:
+    # Usa a rede existente do projeto se já existir
+    # Caso contrário, cria uma nova
+    driver: bridge

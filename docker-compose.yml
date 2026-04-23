@@ -1,0 +1,54 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+# Autoqui — Stack completa (frontend + backend)
+#
+# Redes:
+#   docker_internal  → rede externa do host (nginx/traefik lida com SSL)
+#   autoqui_internal → rede privada entre frontend e backend
+#
+# Deploy:
+#   docker compose up -d --build
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Backend (Node.js) ────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autoqui-backend
+    restart: always
+    env_file:
+      - ./backend/.env            # crie a partir de backend/.env.example
+    networks:
+      - autoqui_internal
+    # PORTA NÃO EXPOSTA ao host — acesso apenas via nginx interno
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Frontend (Nginx + static build) ─────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autoqui-frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - docker_internal     # exposto ao proxy do host (SSL termination)
+      - autoqui_internal    # acessa o backend internamente
+
+# ─────────────────────────────────────────────────────────────
+networks:
+  docker_internal:
+    external: true          # gerenciada pelo nginx/traefik do host
+  autoqui_internal:
+    driver: bridge          # rede privada entre os containers

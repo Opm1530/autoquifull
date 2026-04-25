@@ -1,26 +1,39 @@
-# Build stage
-FROM node:20-alpine AS build-stage
+# ── Stage 1: Build do frontend ───────────────────────────────
+FROM node:20-alpine AS build-frontend
 
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy project files
+RUN npm install && chmod +x node_modules/.bin/*
 COPY . .
+RUN npm run build
 
-# Fix permissions DEPOIS do COPY e build
-RUN chmod +x node_modules/.bin/* && npm run build
+# ── Stage 2: Dependências do backend ─────────────────────────
+FROM node:20-alpine AS build-backend
 
-# Production stage
-FROM nginx:stable-alpine AS production-stage
+WORKDIR /backend
+COPY backend/package*.json ./
+RUN npm ci --only=production
 
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# ── Stage 3: Container final (nginx + node) ──────────────────
+FROM node:20-alpine
+
+# Instala nginx
+RUN apk add --no-cache nginx
+
+# Frontend estático
+COPY --from=build-frontend /app/dist /usr/share/nginx/html
+
+# Backend
+COPY --from=build-backend /backend/node_modules /backend/node_modules
+COPY backend/src /backend/src
+
+# Config nginx (proxy localhost:3001 → backend)
+COPY nginx.conf /etc/nginx/http.d/default.conf
+
+# Script de start
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/start.sh"]

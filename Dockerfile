@@ -14,26 +14,18 @@ WORKDIR /backend
 COPY backend/package*.json ./
 RUN npm ci --only=production
 
-# ── Stage 3: Container final (nginx + node) ──────────────────
+# ── Stage 3: Container final (só Node.js) ────────────────────
 FROM node:20-alpine
 
-# Instala nginx
-RUN apk add --no-cache nginx
-
-# Frontend estático
-COPY --from=build-frontend /app/dist /usr/share/nginx/html
+# Frontend estático (servido pelo Express)
+COPY --from=build-frontend /app/dist /app/dist
 
 # Backend
 COPY --from=build-backend /backend/node_modules /backend/node_modules
 COPY backend/src /backend/src
 
-# Config nginx (proxy localhost:3001 → backend)
-COPY nginx.conf /etc/nginx/http.d/default.conf
+WORKDIR /backend
 
-# Script de start
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+EXPOSE 3001
 
-EXPOSE 80
-
-CMD ["/start.sh"]
+CMD ["node", "src/server.js"]

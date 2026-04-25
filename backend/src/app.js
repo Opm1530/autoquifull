@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import webhookRouter from './routes/webhook.js';
 import calendarRouter from './routes/calendar.js';
 import plansRouter from './routes/plans.js';
@@ -8,52 +10,42 @@ import adminRouter from './routes/admin.js';
 
 const app = express();
 
-// ── Middlewares ───────────────────────────────────────────────
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'apikey'],
-  })
-);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// Frontend build fica em /app/dist dentro do container
+const DIST_PATH = join(__dirname, '../../app/dist');
 
-// Parser JSON — aumenta limite para suportar payloads de mídia em base64
+// ── Middlewares ───────────────────────────────────────────────
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'apikey'],
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Rotas ─────────────────────────────────────────────────────
+// ── API Routes (antes dos estáticos) ─────────────────────────
 
-// Health check
 app.get('/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-  });
+  res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString(), uptime: Math.floor(process.uptime()) });
 });
 
-// Webhooks da Evolution API (IA de agendamento)
 app.use('/webhook', webhookRouter);
-
-// Google Calendar OAuth2 + Trinks
 app.use('/calendar', calendarRouter);
-
-// Planos e assinaturas MercadoPago
 app.use('/plans', plansRouter);
-
-// Pedidos do catálogo
 app.use('/orders', ordersRouter);
-
-// Administração da plataforma (exclusivo admin)
 app.use('/admin', adminRouter);
 
-// 404
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Rota não encontrada' });
+// ── Frontend estático ─────────────────────────────────────────
+// Node serve os arquivos do build do Vite diretamente
+app.use(express.static(DIST_PATH));
+
+// SPA fallback — qualquer rota não encontrada serve o index.html
+app.get('*', (_req, res) => {
+  res.sendFile(join(DIST_PATH, 'index.html'));
 });
 
-// Tratamento de erros globais
+// ── Erros globais ─────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
   console.error('[App] Erro não tratado:', err.message);
   res.status(500).json({ error: 'Erro interno do servidor' });

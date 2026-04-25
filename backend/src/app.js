@@ -4,6 +4,7 @@ import webhookRouter from './routes/webhook.js';
 import calendarRouter from './routes/calendar.js';
 import plansRouter from './routes/plans.js';
 import ordersRouter from './routes/orders.js';
+import adminRouter from './routes/admin.js';
 
 const app = express();
 
@@ -43,6 +44,9 @@ app.use('/plans', plansRouter);
 
 // Pedidos do catálogo
 app.use('/orders', ordersRouter);
+
+// Administração da plataforma (exclusivo admin)
+app.use('/admin', adminRouter);
 
 // 404
 app.use((_req, res) => {

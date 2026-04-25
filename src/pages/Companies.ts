@@ -45,6 +45,7 @@ export const Companies = async () => {
                     <div class="actions">
                         <button class="action-btn" onclick="window.editCompany('${c.id}')" title="Editar"><i style="color: #fff" class="fa-solid fa-pen-to-square"></i></button>
                         <button class="action-btn" onclick="window.toggleCompanyStatus('${c.id}', '${c.status}')" title="${c.status === 'active' ? 'Desativar' : 'Ativar'}">${c.status === 'active' ? '<i style="color: #ef4444;" class="fa-solid fa-toggle-off"></i>' : '<i style="color: #22c55e;" class="fa-solid fa-toggle-on"></i>'}</button>
+                        <button class="action-btn" onclick="window.deleteCompany('${c.id}', '${c.name.replace(/'/g, "\\'")}')" title="Excluir empresa"><i style="color: #ef4444;" class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>
             </tr>
@@ -145,6 +146,79 @@ export const Companies = async () => {
             document.getElementById('company-modal-title')!.innerText = 'Editar Cliente';
             document.getElementById('company-modal')!.classList.remove('hidden');
         }
+    };
+
+    (window as any).deleteCompany = async (id: string, name: string) => {
+        // Modal de confirmação com digitação do nome
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;`;
+        overlay.innerHTML = `
+            <div style="background:#1e1e2e;border:1px solid #ef4444;border-radius:16px;padding:2rem;max-width:440px;width:90%;box-shadow:0 0 40px rgba(239,68,68,0.3);">
+                <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
+                    <div style="width:44px;height:44px;background:rgba(239,68,68,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;font-size:1.2rem;"></i>
+                    </div>
+                    <h3 style="margin:0;color:#ef4444;font-size:1.1rem;">Excluir Empresa</h3>
+                </div>
+                <p style="color:#cbd5e1;margin-bottom:0.5rem;line-height:1.6;">
+                    Esta ação é <strong style="color:white;">irreversível</strong>. Serão apagados permanentemente:
+                </p>
+                <ul style="color:#94a3b8;font-size:0.85rem;margin:0.5rem 0 1.25rem 1rem;line-height:2;">
+                    <li>Todos os leads e mensagens</li>
+                    <li>Todos os pedidos</li>
+                    <li>Todos os produtos e categorias</li>
+                    <li>Instâncias WhatsApp e configurações</li>
+                    <li>Usuários, assinatura e histórico</li>
+                </ul>
+                <p style="color:#e2e8f0;margin-bottom:0.5rem;font-size:0.9rem;">
+                    Digite <strong style="color:#ef4444;">${name}</strong> para confirmar:
+                </p>
+                <input id="delete-confirm-input" type="text" placeholder="Nome da empresa..."
+                    style="width:100%;padding:0.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:white;font-size:0.95rem;margin-bottom:1rem;box-sizing:border-box;outline:none;">
+                <div style="display:flex;gap:0.75rem;">
+                    <button id="delete-cancel-btn" style="flex:1;padding:0.75rem;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid #334155;color:#94a3b8;cursor:pointer;font-size:0.9rem;">Cancelar</button>
+                    <button id="delete-confirm-btn" disabled style="flex:1;padding:0.75rem;border-radius:8px;background:#ef4444;border:none;color:white;cursor:pointer;font-size:0.9rem;font-weight:700;opacity:0.4;transition:opacity 0.2s;">
+                        <i class="fa-solid fa-trash" style="margin-right:6px;"></i>Excluir Tudo
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const input = overlay.querySelector('#delete-confirm-input') as HTMLInputElement;
+        const confirmBtn = overlay.querySelector('#delete-confirm-btn') as HTMLButtonElement;
+        const cancelBtn = overlay.querySelector('#delete-cancel-btn') as HTMLButtonElement;
+
+        input.addEventListener('input', () => {
+            const match = input.value.trim() === name;
+            confirmBtn.disabled = !match;
+            confirmBtn.style.opacity = match ? '1' : '0.4';
+        });
+
+        cancelBtn.addEventListener('click', () => overlay.remove());
+
+        confirmBtn.addEventListener('click', async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excluindo...';
+
+            try {
+                const BACKEND_URL = (window as any).AUTOQUI_BACKEND_URL || '';
+                const res = await fetch(`${BACKEND_URL}/admin/company/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+
+                overlay.remove();
+                companies = companies.filter((c: any) => c.id !== id);
+                refreshTable();
+                toast.success(`Empresa "${name}" excluída — ${data.total} registros removidos.`);
+            } catch (err: any) {
+                overlay.remove();
+                toast.error('Erro ao excluir: ' + err.message);
+            }
+        });
+
+        setTimeout(() => input.focus(), 100);
     };
 
     (window as any).toggleCompanyStatus = async (id: string, currentStatus: string) => {

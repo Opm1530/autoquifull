@@ -1,12 +1,15 @@
 /**
  * Admin Routes — operações exclusivas do administrador da plataforma
  *
- * DELETE /admin/company/:companyId  → Apaga empresa e todos os dados vinculados
+ * GET    /admin/logs               → Últimas linhas de log do servidor
+ * DELETE /admin/company/:companyId → Apaga empresa e todos os dados vinculados
  */
 
 import { Router } from 'express';
 import { getDb } from '../config/firebase.js';
 import { log } from '../utils/logger.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { getRecentLogs } from '../utils/logStore.js';
 
 const router = Router();
 
@@ -28,6 +31,13 @@ async function deleteCollection(db, query) {
   return total;
 }
 
+// ── GET /admin/logs ───────────────────────────────────────────
+
+router.get('/logs', requireAuth, (req, res) => {
+  const n = Math.min(parseInt(req.query.lines || '200', 10), 500);
+  res.json({ logs: getRecentLogs(n) });
+});
+
 // ── DELETE /admin/company/:companyId ─────────────────────────
 
 /**
@@ -38,7 +48,7 @@ async function deleteCollection(db, query) {
  *   categories, instancias, loja_config, empresa_config,
  *   subscriptions, agendamentos, appointments, reminders
  */
-router.delete('/company/:companyId', async (req, res) => {
+router.delete('/company/:companyId', requireAuth, async (req, res) => {
   const { companyId } = req.params;
 
   if (!companyId) {

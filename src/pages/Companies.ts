@@ -3,6 +3,7 @@ import { authService } from '../services/auth';
 import { toast } from '../services/toast';
 import { confirm } from '../services/confirm';
 import { MultiSelect } from '../components/MultiSelect';
+import { backendApi } from '../services/backendApi';
 
 
 interface Company {
@@ -205,11 +206,7 @@ export const Companies = async () => {
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excluindo...';
 
             try {
-                const BACKEND_URL = (window as any).AUTOQUI_BACKEND_URL || '';
-                const res = await fetch(`${BACKEND_URL}/admin/company/${id}`, { method: 'DELETE' });
-                const data = await res.json();
-
-                if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+                const data = await backendApi.delete(`/admin/company/${id}`);
 
                 overlay.remove();
                 companies = companies.filter((c: any) => c.id !== id);

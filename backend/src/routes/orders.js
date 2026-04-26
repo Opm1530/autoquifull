@@ -13,6 +13,7 @@ import {
 } from '../services/orders.js';
 import { getDb } from '../config/firebase.js';
 import { log } from '../utils/logger.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -93,7 +94,7 @@ router.post('/create', async (req, res) => {
  *
  * Body: { orderId, companyId, status, reason? }
  */
-router.patch('/status', async (req, res) => {
+router.patch('/status', requireAuth, async (req, res) => {
   const { orderId, companyId, status, reason } = req.body;
 
   if (!orderId || !companyId || !status) {

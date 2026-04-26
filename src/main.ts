@@ -32,6 +32,7 @@ import { CatalogSettings } from './pages/CatalogSettings';
 import { LandingPage } from './pages/LandingPage';
 import { AdminMigration } from './pages/AdminMigration';
 import { Plans } from './pages/Plans';
+import { BackendLogs } from './pages/BackendLogs';
 
 // Core Application Logic
 class App {
@@ -261,6 +262,7 @@ class App {
       case '/schedule-clients': return 'Clientes';
       case '/admin/webhooks': return 'Configuração do Backend';
       case '/admin/plans': return 'Planos e Assinaturas';
+      case '/admin/logs': return 'Logs do Servidor';
       case '/admin/migration': return 'Migração de Produtos';
       case '/mercado-pago': return 'Mercado Pago';
       case '/catalog-settings': return 'Configuração';
@@ -317,6 +319,8 @@ class App {
         return await Webhooks();
       case '/admin/plans':
         return await Plans();
+      case '/admin/logs':
+        return await BackendLogs();
       case '/admin/migration':
         return await AdminMigration();
       case '/mercado-pago':

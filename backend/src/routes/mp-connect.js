@@ -12,12 +12,13 @@
 import { Router } from 'express';
 import { getDb } from '../config/firebase.js';
 import { log } from '../utils/logger.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
 const MP_BASE = 'https://api.mercadopago.com';
 
-router.post('/connect', async (req, res) => {
+router.post('/connect', requireAuth, async (req, res) => {
   const { accessToken, companyId } = req.body;
 
   if (!accessToken || !companyId) {

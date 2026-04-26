@@ -30,6 +30,10 @@ export const AdminSidebar = () => {
                     <span class="icon"><i class="fa-solid fa-server"></i></span>
                     <span>Config. Backend</span>
                 </a>
+                <a href="/admin/logs" class="nav-item">
+                    <span class="icon"><i class="fa-solid fa-terminal"></i></span>
+                    <span>Logs</span>
+                </a>
                 <a href="/admin/migration" class="nav-item">
                     <span class="icon"><i class="fa-solid fa-clone"></i></span>
                     <span>Migração</span>

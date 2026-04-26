@@ -2,6 +2,7 @@ import { dbService } from '../services/db';
 import { authService } from '../services/auth';
 import { toast } from '../services/toast';
 import { confirm } from '../services/confirm';
+import { backendApi } from '../services/backendApi';
 
 export const MercadoPago = async () => {
     const user = authService.getCurrentUser();
@@ -57,21 +58,11 @@ export const MercadoPago = async () => {
                 mercadoPagoToken: token
             });
 
-            // 2. Valida token e busca dados da conta via backend próprio
-            const response = await fetch('/mp/connect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    accessToken: token,
-                    companyId: user.companyId
-                })
+            // 2. Valida token e busca dados da conta via backend próprio (autenticado)
+            const result = await backendApi.post('/mp/connect', {
+                accessToken: token,
+                companyId: user.companyId,
             });
-
-            const result = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                throw new Error(result?.error || 'Falha ao processar a conexão via servidor.');
-            }
 
             toast.success(`MercadoPago conectado! Conta: ${result.email || result.nome || 'OK'}`);
 

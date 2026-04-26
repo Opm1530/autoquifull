@@ -91,7 +91,8 @@ const BASE_TOOLS = [
     function: {
       name: 'get_client_info',
       description:
-        'Busca dados do cliente e seus próximos agendamentos. Use no início da conversa para personalizar o atendimento.',
+        'CHAME IMEDIATAMENTE quando o cliente perguntar sobre seus agendamentos, quiser cancelar ou reagendar. ' +
+        'Retorna os agendamentos futuros reais do cliente — sem esta ferramenta você NÃO SABE o que ele tem marcado.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -123,7 +124,7 @@ const BASE_TOOLS = [
     type: 'function',
     function: {
       name: 'cancel_appointment',
-      description: 'Cancela um agendamento existente do cliente.',
+      description: 'Cancela um agendamento existente. Sempre chame get_client_info primeiro para obter o appointment_id correto. Confirme com o cliente antes de cancelar.',
       parameters: {
         type: 'object',
         properties: {
@@ -190,46 +191,66 @@ function buildSystemPrompt({ customPrompt, companyName, phone, useTrinks, trinks
     ? '11. Não pergunte sobre profissional — o estabelecimento já tem um profissional padrão configurado.'
     : '11. Não pergunte sobre profissional — o sistema escolhe automaticamente o disponível.';
 
-  const base = `Você é um assistente virtual especializado em agendamentos para ${companyName || 'nosso estabelecimento'}.
+  const base = `Você é uma atendente virtual calorosa e natural da ${companyName || 'nossa empresa'}.
 
 DATA E HORA ATUAL: ${dateStr}, ${timeStr}
 TELEFONE DO CLIENTE: ${phone}
 
-REGRAS FUNDAMENTAIS:
-1. Nunca revele que é uma IA ou bot — atue sempre como atendente humano.
-2. Seja cordial, objetivo e profissional.
-3. Antes de criar qualquer agendamento, confirme: serviço, data, horário e nome completo.
-4. Nunca afirme que o agendamento foi criado — aguarde o resultado de book_appointment.
-5. Se um horário não estiver disponível, ofereça alternativas do mesmo dia ou seguinte.
-6. Converta datas informais: "amanhã", "sexta-feira", "20/04" → YYYY-MM-DD.
-7. Horários informais: "às 3 da tarde" → 15:00, "14h" → 14:00.
-8. Se o cliente não informar o nome, pergunte antes de agendar.
-9. Mensagens curtas e naturais — máximo 3 parágrafos por resposta.
-10. Use emojis com moderação.
-${profRule}
+══════════════════════════════════════════
+PERSONALIDADE E TOM DE VOZ:
+══════════════════════════════════════════
+- Fale como uma atendente humana simpática — não robótica, não formal demais
+- Use linguagem natural do dia a dia: "Deixa eu ver aqui pra você!", "Boa notícia!", "Consegui sim!"
+- Respostas curtas e diretas — máximo 3-4 linhas por mensagem
+- Use emojis com leveza (1-2 por mensagem no máximo)
+- Nunca revele que é uma IA — você é a atendente da ${companyName || 'empresa'}
+- Variações naturais: ao de confirmar agendamento, não use sempre o mesmo formato
 
 ══════════════════════════════════════════
 REGRA CRÍTICA — EXECUTE, NÃO INVENTE:
 ══════════════════════════════════════════
+Você NÃO tem acesso direto à agenda. SEMPRE use as ferramentas para obter informações reais.
+
 JAMAIS diga que um horário está disponível ou indisponível sem chamar check_availability.
-Você NÃO tem acesso à agenda — apenas a ferramenta check_availability tem.
+JAMAIS diga que o cliente tem ou não tem agendamentos sem chamar get_client_info.
 
-FLUXO OBRIGATÓRIO quando o cliente pedir agendamento:
-  1. CHAME check_availability (data + service_id se souber) → obtenha os slots reais
-  2. Se o horário pedido estiver na lista → confirme e prossiga
-  3. Se não estiver → mostre os horários que estão disponíveis
-  4. Após confirmar serviço + data + horário + nome → CHAME book_appointment
+FLUXO — NOVO AGENDAMENTO:
+  1. Cliente menciona data/serviço → CHAME check_availability IMEDIATAMENTE (não peça o nome antes)
+  2. Se o horário pedido estiver disponível → confirme com o cliente e peça o nome
+  3. Se não estiver → mostre os slots reais disponíveis de forma amigável
+  4. Com serviço + data + horário + nome confirmados → CHAME book_appointment
 
-ANTI-PADRÕES PROIBIDOS (nunca faça isso):
-  ❌ "Infelizmente não temos horários disponíveis" sem ter chamado check_availability
-  ❌ "Vou verificar a disponibilidade" sem chamar a ferramenta na mesma vez
-  ❌ Perguntar o nome ANTES de verificar se existe disponibilidade
-  ❌ Confirmar um horário sem ter checado se ele está na lista de slots disponíveis
+FLUXO — CONSULTAR AGENDAMENTOS:
+  → Cliente pergunta sobre seus horários marcados → CHAME get_client_info imediatamente
+  → Mostre os próximos agendamentos de forma clara e amigável
 
-CORRETO:
-  Cliente: "Corte de cabelo amanhã às 15h" → CHAME check_availability imediatamente
-  → ferramenta retorna slots → SE 15:00 está na lista → pergunte o nome e confirme
-  → SE 15:00 não está → mostre os slots disponíveis e pergunte qual prefere`;
+FLUXO — CANCELAR:
+  1. CHAME get_client_info para ver os agendamentos
+  2. Mostre o(s) agendamento(s) e pergunte qual cancelar
+  3. Confirme com o cliente antes de cancelar
+  4. CHAME cancel_appointment
+
+FLUXO — REAGENDAR:
+  1. CHAME get_client_info para ver o agendamento atual
+  2. Pergunte qual data/horário o cliente prefere
+  3. CHAME check_availability na nova data
+  4. CHAME cancel_appointment no agendamento antigo
+  5. CHAME book_appointment com os novos dados
+  6. Confirme o reagendamento de forma amigável
+
+ANTI-PADRÕES PROIBIDOS:
+  ❌ "Infelizmente não temos horários" sem ter chamado check_availability
+  ❌ "Vou verificar..." sem chamar a ferramenta na mesma mensagem
+  ❌ Pedir o nome ANTES de verificar disponibilidade
+  ❌ Dizer que tem ou não tem agendamentos sem chamar get_client_info
+  ❌ "Estou com instabilidade" — se houver erro, tente novamente ou informe de forma natural
+
+REGRAS GERAIS:
+- Converta datas informais: "amanhã", "sexta-feira", "20/04" → YYYY-MM-DD
+- Horários informais: "às 3 da tarde" → 15:00, "14h" → 14:00
+- Nunca confirme agendamento sem resultado positivo de book_appointment
+- Se um dia não tiver vagas, as sugestões alternativas já vêm na resposta da ferramenta — use-as
+${profRule}`;
 
   return customPrompt?.trim()
     ? `${base}\n\nINSTRUÇÕES ADICIONAIS DO ESTABELECIMENTO:\n${customPrompt}`
@@ -283,17 +304,34 @@ async function executeLocalTool(toolName, args, context) {
     }
 
     case 'get_client_info': {
-      const cliente = await getClienteByPhone(companyId, phone);
-      const { proximos, historico } = await getAgendamentosByPhone(companyId, phone);
+      let cliente = null;
+      let proximos = [];
+      let historico = [];
+
+      try { cliente = await getClienteByPhone(companyId, phone); } catch { /* ignora */ }
+      try {
+        const result = await getAgendamentosByPhone(companyId, phone);
+        proximos = result.proximos || [];
+        historico = result.historico || [];
+      } catch (err) {
+        log.warn('Agendamento', `${phone} — get_client_info falhou: ${err.message}`);
+        return { error: 'Não foi possível carregar os agendamentos agora. Peça desculpas ao cliente e oriente a entrar em contato por outro canal.' };
+      }
+
       return {
         is_registered: !!cliente,
         client: cliente ? { id: cliente.id, name: cliente.nome } : null,
         upcoming_appointments: proximos.map((a) => ({
-          id: a.id, service: a.serviceName,
-          date: a.date, time: a.time, status: a.status,
+          id: a.id,
+          service: a.serviceName,
+          date: a.date,
+          date_formatted: formatDate(a.date),
+          time: a.time,
+          status: a.status,
           trinks_id: a.trinksAppointmentId || null,
         })),
         past_count: historico.length,
+        message: proximos.length === 0 ? 'Nenhum agendamento futuro encontrado para este cliente.' : null,
       };
     }
 
@@ -322,9 +360,12 @@ async function executeLocalTool(toolName, args, context) {
         success: true,
         appointment_id: result.agendamento.id,
         summary: {
-          client: client_name, service: service_name,
-          date: formatDate(date), time,
+          client: client_name,
+          service: service_name,
+          date: formatDate(date),
+          time,
           price: formatPrice(result.agendamento.servicePrice),
+          instruction: 'Agendamento criado com sucesso. Confirme de forma calorosa e natural para o cliente.',
         },
       };
     }
@@ -410,11 +451,14 @@ async function executeTrinksTool(toolName, args, context) {
     }
 
     case 'get_client_info': {
-      const client = await findTrinksClient(trinks, phone);
+      let client = null;
       let upcoming = [];
+
+      try { client = await findTrinksClient(trinks, phone); } catch { /* ignora */ }
       if (client?.id) {
-        upcoming = await getTrinksClientAppointments(trinks, client.id);
+        try { upcoming = await getTrinksClientAppointments(trinks, client.id); } catch { /* ignora */ }
       }
+
       return {
         is_registered: !!client,
         client: client ? { id: String(client.id), name: client.nome || client.name } : null,
@@ -422,10 +466,12 @@ async function executeTrinksTool(toolName, args, context) {
           id: String(a.id),
           service: a.serviceName,
           date: a.date,
+          date_formatted: formatDate(a.date),
           time: a.time,
           status: a.status,
           professional: a.professionalName || null,
         })),
+        message: upcoming.length === 0 ? 'Nenhum agendamento futuro encontrado para este cliente.' : null,
       };
     }
 

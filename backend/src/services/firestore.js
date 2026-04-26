@@ -344,19 +344,22 @@ export async function getAgendamentosByPhone(companyId, phone) {
   // Pega a data de hoje no fuso de São Paulo
   const today = getTodayStr();
 
+  // Nota: não usamos where('status', '!=', 'cancelado') aqui porque
+  // isso exige índice composto no Firestore. Filtramos em memória.
   const snap = await db
     .collection('agendamentos')
     .where('companyId', '==', companyId)
     .where('clientPhone', '==', phone)
-    .where('status', '!=', 'cancelado')
     .get();
 
-  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const docs = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((a) => a.status !== 'cancelado');
 
   // Retorna próximos e passados
   return {
-    proximos: docs.filter((a) => a.date >= today),
-    historico: docs.filter((a) => a.date < today),
+    proximos: docs.filter((a) => a.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
+    historico: docs.filter((a) => a.date < today).sort((a, b) => b.date.localeCompare(a.date)),
   };
 }
 

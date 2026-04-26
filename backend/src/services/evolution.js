@@ -226,7 +226,8 @@ export async function sendPresence(instanceName, phone) {
 
   await request('POST', `/chat/sendPresence/${instanceName}`, {
     number,
-    options: { presence: 'composing', delay: 3000 },
+    presence: 'composing',
+    delay: 3000,
   }).catch(() => {}); // Ignora erros de presence — não é crítico
 }
 

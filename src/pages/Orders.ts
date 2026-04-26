@@ -715,13 +715,15 @@ export const Orders = async () => {
         const isWithdrawal = order.entrega === 'retirada';
         const paymentMethod = (order.pagamento || order.formaPagamento || '').toLowerCase();
         const isPayOnDelivery = paymentMethod.includes('entrega') || paymentMethod.includes('dinheiro') || paymentMethod.includes('maquininha');
+        const isPix = paymentMethod.includes('pix') || paymentMethod.includes('pagamento_no_pix');
+        const isLink = paymentMethod.includes('link');
 
         switch (status) {
             case 'em_montagem':
-                // Toda vez que for pagamento na entrega/retirada, pula o aguardando pagamento
-                const acceptTarget = isPayOnDelivery ? 'em_preparo' : 'aguardando_pagamento';
+                // na_entrega/dinheiro/maquininha → aceita e já vai para em_preparo
+                // (pedidos pix/link não chegam mais aqui — já nascem em aguardando_pagamento)
                 return `
-                    <button id="btn-main-action" class="btn-lead-action" data-target="${acceptTarget}">
+                    <button id="btn-main-action" class="btn-lead-action" data-target="em_preparo">
                         <i class="fa-solid fa-check"></i> Aceitar Pedido
                     </button>
                     <button id="btn-cancel" class="btn-lead-action danger" data-stage="init">
@@ -730,7 +732,10 @@ export const Orders = async () => {
             case 'aguardando_pagamento':
                 return `
                     <button id="btn-main-action" class="btn-lead-action" data-target="em_preparo">
-                        <i class="fa-solid fa-credit-card"></i> Confirmar Pagamento
+                        <i class="fa-solid fa-credit-card"></i> ${isPix ? 'Confirmar PIX' : isLink ? 'Confirmar Pagamento' : 'Confirmar Pagamento'}
+                    </button>
+                    <button id="btn-cancel" class="btn-lead-action danger" data-stage="init">
+                        <i class="fa-solid fa-xmark"></i> Cancelar Pedido
                     </button>`;
             case 'em_preparo':
                 if (isWithdrawal) {

@@ -90,8 +90,12 @@ export async function createOrder(companyId, storeId, data) {
     paymentSubMethod: data.paymentSubMethod || null,
     troco: data.troco || null,
 
-    // Status inicial
-    status: data.paymentMethod === 'pix_mercadopago' ? 'aguardando_pagamento' : 'em_montagem',
+    // Status inicial:
+    // na_entrega / dinheiro / maquininha → em_montagem (operador aceita e já prepara)
+    // qualquer PIX ou link de pagamento  → aguardando_pagamento (aguarda confirmação)
+    status: ['na_entrega', 'dinheiro', 'maquininha'].includes(data.paymentMethod)
+      ? 'em_montagem'
+      : 'aguardando_pagamento',
 
     // Campos extras do catálogo
     bairro: data.bairro || '',

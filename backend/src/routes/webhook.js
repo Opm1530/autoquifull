@@ -22,7 +22,7 @@ import { getConversation, isHumanMode, saveMessages, buildOpenAIHistory } from '
 import { processAgendamentoMessage } from '../services/agendamento-agent.js';
 import { processVendaMessage, saveCartState, loadCartState } from '../services/venda-agent.js';
 import { transcribeAudio } from '../services/whisper.js';
-import { bufferMessage } from '../utils/buffer.js';
+import { bufferMessage, hasPendingBuffer } from '../utils/buffer.js';
 import { enqueue } from '../utils/queue.js';
 import { isDuplicate } from '../utils/dedup.js';
 import { normalizePhone } from '../utils/phone.js';
@@ -247,6 +247,13 @@ async function handleMessage(companyId, storeId, instanceName, phone, userMessag
     if (transferredToHuman) {
       await upsertLead(companyId, storeId, phone, { statusAtendimento: 'em_atendimento_humano' });
       log.ok('Handler', `${phone} — transferido para atendimento humano`);
+    }
+
+    // Verifica se o cliente mandou nova mensagem enquanto a IA processava
+    // Se sim, descarta a resposta — o próximo ciclo da fila terá contexto completo
+    if (hasPendingBuffer(phone)) {
+      log.warn('Handler', `${phone} — nova mensagem chegou durante processamento, descartando resposta atual`);
+      return;
     }
 
     // Envia as respostas via WhatsApp

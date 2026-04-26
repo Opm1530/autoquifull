@@ -74,6 +74,14 @@ export function clearBuffer(phone) {
 }
 
 /**
+ * Retorna se há mensagem pendente no buffer para este telefone.
+ * Usado para evitar enviar resposta que já ficou obsoleta.
+ */
+export function hasPendingBuffer(phone) {
+  return buffers.has(phone);
+}
+
+/**
  * Retorna quantas mensagens estão pendentes no buffer (debug)
  */
 export function getBufferSize() {

@@ -345,10 +345,18 @@ function getDayHours(horarios, dateStr) {
   const dayNames = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
   const d = new Date(dateStr + 'T12:00:00');
   const dayKey = dayNames[d.getDay()];
+  const isSunday = d.getDay() === 0;
 
-  // Padrão se não houver configuração
+  // Padrão se não houver configuração alguma
   if (!horarios) {
-    return { openTime: '09:00', closeTime: '18:00', isOpen: d.getDay() !== 0 };
+    return { openTime: '09:00', closeTime: '18:00', isOpen: !isSunday };
+  }
+
+  // Verifica se ao menos UM dia tem active:true (configuração real)
+  // Se nenhum dia tiver, considera que a configuração não foi feita ainda → usa padrão
+  const hasAnyActiveDay = Object.values(horarios).some((d) => d?.active === true);
+  if (!hasAnyActiveDay) {
+    return { openTime: '09:00', closeTime: '18:00', isOpen: !isSunday };
   }
 
   const dayConfig = horarios[dayKey];

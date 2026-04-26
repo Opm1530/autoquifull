@@ -54,7 +54,7 @@ const BASE_TOOLS = [
     type: 'function',
     function: {
       name: 'get_services',
-      description: 'Lista todos os serviços disponíveis para agendamento, com nome, preço e duração.',
+      description: 'Lista todos os serviços disponíveis. CHAME no início da conversa ou quando o cliente mencionar um serviço pelo nome, para obter o service_id correto necessário para check_availability e book_appointment.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -63,8 +63,9 @@ const BASE_TOOLS = [
     function: {
       name: 'check_availability',
       description:
-        'Verifica os horários disponíveis para agendamento em uma data específica. ' +
-        'Use quando o cliente quiser saber horários disponíveis ou quiser agendar.',
+        'CHAME IMEDIATAMENTE quando o cliente mencionar qualquer data ou horário para agendamento. ' +
+        'Retorna os slots reais disponíveis — sem chamar esta ferramenta você NÃO SABE se há vagas. ' +
+        'Nunca diga "não temos horários" sem consultar esta ferramenta primeiro.',
       parameters: {
         type: 'object',
         properties: {
@@ -205,7 +206,30 @@ REGRAS FUNDAMENTAIS:
 8. Se o cliente não informar o nome, pergunte antes de agendar.
 9. Mensagens curtas e naturais — máximo 3 parágrafos por resposta.
 10. Use emojis com moderação.
-${profRule}`;
+${profRule}
+
+══════════════════════════════════════════
+REGRA CRÍTICA — EXECUTE, NÃO INVENTE:
+══════════════════════════════════════════
+JAMAIS diga que um horário está disponível ou indisponível sem chamar check_availability.
+Você NÃO tem acesso à agenda — apenas a ferramenta check_availability tem.
+
+FLUXO OBRIGATÓRIO quando o cliente pedir agendamento:
+  1. CHAME check_availability (data + service_id se souber) → obtenha os slots reais
+  2. Se o horário pedido estiver na lista → confirme e prossiga
+  3. Se não estiver → mostre os horários que estão disponíveis
+  4. Após confirmar serviço + data + horário + nome → CHAME book_appointment
+
+ANTI-PADRÕES PROIBIDOS (nunca faça isso):
+  ❌ "Infelizmente não temos horários disponíveis" sem ter chamado check_availability
+  ❌ "Vou verificar a disponibilidade" sem chamar a ferramenta na mesma vez
+  ❌ Perguntar o nome ANTES de verificar se existe disponibilidade
+  ❌ Confirmar um horário sem ter checado se ele está na lista de slots disponíveis
+
+CORRETO:
+  Cliente: "Corte de cabelo amanhã às 15h" → CHAME check_availability imediatamente
+  → ferramenta retorna slots → SE 15:00 está na lista → pergunte o nome e confirme
+  → SE 15:00 não está → mostre os slots disponíveis e pergunte qual prefere`;
 
   return customPrompt?.trim()
     ? `${base}\n\nINSTRUÇÕES ADICIONAIS DO ESTABELECIMENTO:\n${customPrompt}`
@@ -235,7 +259,26 @@ async function executeLocalTool(toolName, args, context) {
       const svc = services.find((s) => s.id === service_id);
       const duration = svc?.duration || 60;
       const slots = await getAvailableSlots(companyId, storeId, date, duration);
-      if (!slots.length) return { date, available: false, slots: [], message: 'Sem horários disponíveis nesta data.' };
+      if (!slots.length) {
+        // Tenta sugerir o próximo dia útil disponível (até 7 dias)
+        const suggestions = [];
+        for (let i = 1; i <= 7 && suggestions.length < 3; i++) {
+          const nextDate = new Date(date + 'T12:00:00');
+          nextDate.setDate(nextDate.getDate() + i);
+          const nextDateStr = nextDate.toISOString().slice(0, 10);
+          const nextSlots = await getAvailableSlots(companyId, storeId, nextDateStr, duration);
+          if (nextSlots.length > 0) {
+            suggestions.push({ date: nextDateStr, slots: nextSlots.slice(0, 5) });
+          }
+        }
+        return {
+          date,
+          available: false,
+          slots: [],
+          message: 'Nenhum horário disponível nesta data.',
+          suggestions,
+        };
+      }
       return { date, available: true, slots };
     }
 

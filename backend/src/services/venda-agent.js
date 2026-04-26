@@ -25,7 +25,7 @@ import { OpenAI } from 'openai';
 import { ENV } from '../config/env.js';
 import { getDb } from '../config/firebase.js';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getCatalogProducts, getLeadByPhone } from './firestore.js';
+import { getCatalogProducts, getLeadByPhone, upsertLead } from './firestore.js';
 import { setHumanMode } from './conversation.js';
 import { createOrder, generateMPPaymentLink, formatOrderSummary } from './orders.js';
 import { log, timer, preview } from '../utils/logger.js';
@@ -175,7 +175,7 @@ const TOOLS = [
 // ─────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(context) {
-  const { customPrompt, companyName, phone, hasMercadoPago, deliveryEnabled, minOrder } = context;
+  const { customPrompt, companyName, phone, hasMercadoPago, deliveryEnabled, minOrder, leadName, leadLastAddress } = context;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('pt-BR', {
@@ -199,6 +199,14 @@ function buildSystemPrompt(context) {
     ? `Entrega e retirada disponíveis.${minOrder ? ` Pedido mínimo para entrega: R$ ${minOrder}.` : ''}`
     : 'Apenas retirada no local disponível.';
 
+  // Seção de cliente recorrente — só aparece se tiver dados salvos
+  const returningCustomerSection = (leadName || leadLastAddress)
+    ? `\n\nCLIENTE RECORRENTE — dados do último atendimento:
+- Nome: ${leadName || 'não informado'}
+${leadLastAddress ? `- Último endereço de entrega: ${leadLastAddress}` : ''}
+Ao coletar dados de entrega, USE esses dados sem perguntar de novo. Apenas confirme: "Posso usar o nome ${leadName || ''} e entregar no mesmo endereço de antes?" — ou pergunte se mudou.`
+    : '';
+
   const base = `Você é um atendente virtual de vendas para ${companyName || 'nosso estabelecimento'}.
 
 DATA E HORA ATUAL: ${dateStr}, ${timeStr}
@@ -221,7 +229,7 @@ REGRAS FUNDAMENTAIS:
 9. Mensagens curtas e naturais — máximo 3 parágrafos por resposta.
 10. Use emojis com moderação para tornar a conversa amigável.
 11. Ao mostrar o catálogo, organize por categoria e inclua preços.
-12. Para produtos promocionais, destaque o preço promocional.`;
+12. Para produtos promocionais, destaque o preço promocional.${returningCustomerSection}`;
 
   if (customPrompt?.trim()) {
     return `${base}\n\nINSTRUÇÕES ADICIONAIS DO ESTABELECIMENTO:\n${customPrompt}`;
@@ -414,6 +422,13 @@ async function executeTool(toolName, args, context) {
         }
       }
 
+      // Salva nome e endereço no lead para futuras compras (fire-and-forget)
+      if (context.delivery?.clientName) {
+        const leadUpdate = { nome: context.delivery.clientName };
+        if (context.delivery.address) leadUpdate.ultimoEndereco = context.delivery.address;
+        upsertLead(companyId, storeId, phone, leadUpdate).catch(() => {});
+      }
+
       // Limpa o carrinho após confirmar
       context.cart = [];
       context.delivery = null;
@@ -474,15 +489,22 @@ export async function processVendaMessage(params) {
 
   const tAgent = timer();
 
-  // Carrega catálogo
-  const catalog = await loadCatalog(companyId, storeId);
+  // Carrega catálogo e dados do lead em paralelo
+  const [catalog, existingLead] = await Promise.all([
+    loadCatalog(companyId, storeId),
+    getLeadByPhone(companyId, phone),
+  ]);
+
+  // Dados do cliente recorrente para contextualizar o prompt
+  const leadName = existingLead?.nome && existingLead.nome !== 'Cliente' ? existingLead.nome : '';
+  const leadLastAddress = existingLead?.ultimoEndereco || '';
 
   // Flags de configuração da loja
   const hasMercadoPago = !!(company?.mercadoPagoToken);
   const deliveryEnabled = lojaConfig?.entrega_habilitada !== false;
   const minOrder = lojaConfig?.pedido_minimo || 0;
 
-  log.ai('Venda', `${phone} — ${catalog.length} produto(s) | MP: ${hasMercadoPago ? 'sim' : 'não'} | entrega: ${deliveryEnabled ? 'sim' : 'não'} | carrinho atual: ${(Array.isArray(initialCart) ? initialCart : []).length} item(s)`);
+  log.ai('Venda', `${phone} — ${catalog.length} produto(s) | MP: ${hasMercadoPago ? 'sim' : 'não'} | entrega: ${deliveryEnabled ? 'sim' : 'não'} | carrinho atual: ${(Array.isArray(initialCart) ? initialCart : []).length} item(s)${leadName ? ` | cliente recorrente: ${leadName}` : ''}`);
 
   // Contexto compartilhado com o executor
   const context = {
@@ -505,6 +527,8 @@ export async function processVendaMessage(params) {
     hasMercadoPago,
     deliveryEnabled,
     minOrder,
+    leadName,
+    leadLastAddress,
   });
 
   const messages = [

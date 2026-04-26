@@ -234,6 +234,94 @@ export const LandingPage = () => {
         .lp-card p { color: var(--lp-text-dim); line-height: 1.8; margin-bottom: 2rem; font-size: 1.05rem; }
         .lp-card-link { color: var(--lp-primary); text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
 
+        /* ── Pricing ── */
+        .lp-pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            align-items: stretch;
+        }
+        .lp-pricing-card {
+            background: var(--lp-glass);
+            border: 1px solid var(--lp-border);
+            border-radius: 32px;
+            padding: 3rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s;
+            backdrop-filter: blur(8px);
+            position: relative;
+            overflow: hidden;
+        }
+        .lp-pricing-card:hover { transform: translateY(-8px); box-shadow: 0 30px 80px rgba(0,0,0,0.3); }
+        .lp-pricing-card.popular {
+            border-color: var(--lp-primary);
+            background: rgba(99, 102, 241, 0.06);
+        }
+        .lp-pricing-badge {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, var(--lp-primary), var(--lp-secondary));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 99px;
+            letter-spacing: 0.5px;
+        }
+        .lp-pricing-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--lp-text);
+        }
+        .lp-pricing-price {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .lp-pricing-price .currency { font-size: 1.5rem; font-weight: 700; color: var(--lp-text-dim); margin-bottom: 8px; }
+        .lp-pricing-price .amount { font-size: 4rem; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+        .lp-pricing-price .period { font-size: 1rem; color: var(--lp-text-dim); margin-bottom: 8px; }
+        .lp-pricing-desc { color: var(--lp-text-dim); font-size: 0.95rem; margin-bottom: 2rem; min-height: 40px; }
+        .lp-pricing-divider { height: 1px; background: var(--lp-border); margin-bottom: 2rem; }
+        .lp-pricing-features { list-style: none; padding: 0; margin: 0 0 2.5rem; flex: 1; }
+        .lp-pricing-features li { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1rem; font-size: 0.95rem; color: var(--lp-text); }
+        .lp-pricing-features li i { color: var(--lp-primary); margin-top: 3px; flex-shrink: 0; }
+        .lp-pricing-cta {
+            display: block;
+            text-align: center;
+            padding: 1rem 2rem;
+            border-radius: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: var(--lp-glass);
+            border: 1px solid var(--lp-border);
+            color: var(--lp-text);
+        }
+        .lp-pricing-card.popular .lp-pricing-cta {
+            background: linear-gradient(135deg, var(--lp-primary), var(--lp-secondary));
+            border: none;
+            color: white;
+            box-shadow: 0 8px 25px rgba(99,102,241,0.35);
+        }
+        .lp-pricing-cta:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .lp-pricing-skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 12px;
+            height: 24px;
+            margin-bottom: 12px;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         /* ── FAQ ── */
         .lp-faq { padding: 120px 10%; max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
         .lp-faq-item {
@@ -301,6 +389,7 @@ export const LandingPage = () => {
             .lp-hero h1 { font-size: 3.5rem; }
             .lp-section-header h2 { font-size: 2.8rem; }
             .lp-footer { grid-template-columns: 1fr 1fr; gap: 4rem; }
+            .lp-pricing-grid { grid-template-columns: 1fr 1fr; }
         }
         @media(max-width: 768px) {
             .lp-hero h1 { font-size: 2.8rem; }
@@ -310,6 +399,8 @@ export const LandingPage = () => {
             .lp-logo { margin: 0 auto; }
             .lp-hero { padding-top: 80px; }
             .lp-wa-float { bottom: 25px; right: 25px; width: 55px; height: 55px; font-size: 28px; }
+            .lp-pricing-grid { grid-template-columns: 1fr; }
+            .lp-pricing-price .amount { font-size: 3rem; }
         }
     </style>
 
@@ -323,7 +414,7 @@ export const LandingPage = () => {
                 <span>AutoQui</span>
             </div>
             <div class="lp-nav-links">
-                <a href="#features" class="lp-nav-link">Planos</a>
+                <a href="#pricing" class="lp-nav-link">Planos</a>
                 <a href="#solucoes" class="lp-nav-link">Soluções</a>
                 <a href="#faq" class="lp-nav-link">Suporte</a>
                 <a href="/login" class="lp-btn-login">Entrar no Painel</a>
@@ -408,6 +499,20 @@ export const LandingPage = () => {
             </div>
         </section>
 
+        <!-- Pricing Section -->
+        <section id="pricing" class="lp-section">
+            <div class="lp-section-header">
+                <h2>Planos e Preços</h2>
+                <p>Escolha o plano ideal para o seu negócio. Sem taxas ocultas, sem contratos longos — cancele quando quiser.</p>
+            </div>
+            <div id="lp-pricing-grid" class="lp-pricing-grid">
+                <!-- Preenchido dinamicamente via JS -->
+                <div class="lp-pricing-card"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
+                <div class="lp-pricing-card popular"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
+                <div class="lp-pricing-card"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
+            </div>
+        </section>
+
         <section id="faq" class="lp-faq">
             <div class="lp-section-header">
                 <h2>Perguntas Frequentes</h2>
@@ -466,6 +571,75 @@ export const LandingPage = () => {
     </div>
 
     <script>
+        // ── Pricing: carrega planos do backend ──────────────────
+        (function loadPricing() {
+            const WA = 'https://wa.me/5564996168691';
+            const POPULAR_ID = 'pro';
+            const ORDER = ['starter', 'pro', 'business'];
+            const DEFAULT_FEATURES = {
+                starter:  ['Atendimento IA via WhatsApp', 'Até 500 mensagens/mês', 'Catálogo de produtos', 'Suporte por e-mail'],
+                pro:      ['Tudo do Starter', 'Mensagens ilimitadas', 'Gestão de pedidos', 'Campanhas em massa', 'Suporte prioritário'],
+                business: ['Tudo do Pro', 'Multi-lojas', 'Agendamentos IA', 'Relatórios avançados', 'Gerente de conta dedicado'],
+            };
+            const DEFAULT_DESC = {
+                starter:  'Perfeito para quem está começando a automatizar o atendimento.',
+                pro:      'O mais escolhido por pequenas e médias empresas.',
+                business: 'Para negócios com alto volume e múltiplas unidades.',
+            };
+
+            function renderCard(plan, id) {
+                const isPopular = id === POPULAR_ID;
+                const features = (plan.features && plan.features.length > 0)
+                    ? plan.features
+                    : (DEFAULT_FEATURES[id] || []);
+                const desc = plan.description || DEFAULT_DESC[id] || '';
+                const price = Number(plan.price || 0);
+                const name = plan.name || id;
+
+                return \`
+                <div class="lp-pricing-card\${isPopular ? ' popular' : ''}">
+                    \${isPopular ? '<span class="lp-pricing-badge">⭐ Mais Popular</span>' : ''}
+                    <div class="lp-pricing-name">\${name}</div>
+                    <div class="lp-pricing-price">
+                        <span class="currency">R$</span>
+                        <span class="amount">\${price}</span>
+                        <span class="period">/mês</span>
+                    </div>
+                    <div class="lp-pricing-desc">\${desc}</div>
+                    <div class="lp-pricing-divider"></div>
+                    <ul class="lp-pricing-features">
+                        \${features.map(f => \`<li><i class="fa-solid fa-circle-check"></i>\${f}</li>\`).join('')}
+                    </ul>
+                    <a href="\${WA}?text=Olá!%20Quero%20contratar%20o%20plano%20\${encodeURIComponent(name)}" target="_blank" class="lp-pricing-cta">
+                        Quero o \${name}
+                    </a>
+                </div>\`;
+            }
+
+            fetch('/plans/config')
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(({ plans }) => {
+                    const grid = document.getElementById('lp-pricing-grid');
+                    if (!grid || !plans) return;
+                    const cards = ORDER
+                        .filter(id => plans[id] && plans[id].active !== false)
+                        .map(id => renderCard(plans[id], id))
+                        .join('');
+                    grid.innerHTML = cards || grid.innerHTML;
+                })
+                .catch(() => {
+                    // fallback: valores padrão hardcoded
+                    const defaults = {
+                        starter:  { name: 'Starter',  price: 197 },
+                        pro:      { name: 'Pro',       price: 397 },
+                        business: { name: 'Business',  price: 697 },
+                    };
+                    const grid = document.getElementById('lp-pricing-grid');
+                    if (!grid) return;
+                    grid.innerHTML = ORDER.map(id => renderCard(defaults[id], id)).join('');
+                });
+        })();
+
         // FAQ Toggle
         document.querySelectorAll('.lp-faq-item').forEach(item => {
             item.addEventListener('click', () => {

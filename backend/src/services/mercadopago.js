@@ -10,6 +10,7 @@
  */
 
 import { log, timer } from '../utils/logger.js';
+import { getDb } from '../config/firebase.js';
 
 const MP_BASE = 'https://api.mercadopago.com';
 
@@ -35,55 +36,33 @@ async function mpRequest(method, path, body) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Definição de planos
+// Definição de planos — fallback hardcoded, sobrescrito pelo Firestore
 // ─────────────────────────────────────────────────────────────
 
-export const PLANS = {
-  starter:  { id: 'starter',  name: 'Starter',  price: 197, implFee: 497  },
-  pro:      { id: 'pro',      name: 'Pro',       price: 397, implFee: 797  },
-  business: { id: 'business', name: 'Business',  price: 697, implFee: 1497 },
+export const DEFAULT_PLANS = {
+  starter:  { id: 'starter',  name: 'Starter',  price: 197 },
+  pro:      { id: 'pro',      name: 'Pro',       price: 397 },
+  business: { id: 'business', name: 'Business',  price: 697 },
 };
 
-// ─────────────────────────────────────────────────────────────
-// Taxa de Implementação (pagamento único)
-// ─────────────────────────────────────────────────────────────
-
 /**
- * Cria uma preferência de pagamento para a taxa de implementação.
- * Retorna { preferenceId, checkoutUrl }.
+ * Carrega planos do Firestore (settings/plans) com fallback para DEFAULT_PLANS.
  */
-export async function createImplementationFeeLink(companyId, planId, companyName) {
-  const plan = PLANS[planId];
-  if (!plan) throw new Error(`Plano inválido: ${planId}`);
-
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-  const preference = await mpRequest('POST', '/checkout/preferences', {
-    items: [
-      {
-        id: `impl_${planId}_${companyId}`,
-        title: `Taxa de Implementação — Plano ${plan.name} (${companyName})`,
-        quantity: 1,
-        currency_id: 'BRL',
-        unit_price: plan.implFee,
-      },
-    ],
-    external_reference: JSON.stringify({ type: 'implementation', companyId, planId }),
-    notification_url: `${backendUrl}/plans/webhook`,
-    back_urls: {
-      success: `${frontendUrl}/admin/plans?payment=success`,
-      failure: `${frontendUrl}/admin/plans?payment=failure`,
-      pending: `${frontendUrl}/admin/plans?payment=pending`,
-    },
-    auto_return: 'approved',
-    metadata: { companyId, planId, type: 'implementation' },
-  });
-
-  return {
-    preferenceId: preference.id,
-    checkoutUrl: preference.init_point,
-  };
+export async function getPlans() {
+  try {
+    const db = getDb();
+    const doc = await db.collection('settings').doc('plans').get();
+    if (doc.exists) {
+      const data = doc.data();
+      // Mescla com defaults para garantir campos obrigatórios
+      const merged = {};
+      for (const key of Object.keys(DEFAULT_PLANS)) {
+        merged[key] = { ...DEFAULT_PLANS[key], ...(data[key] || {}) };
+      }
+      return merged;
+    }
+  } catch { /* fallback abaixo */ }
+  return { ...DEFAULT_PLANS };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -95,7 +74,8 @@ export async function createImplementationFeeLink(companyId, planId, companyName
  * Retorna { subscriptionId, checkoutUrl }.
  */
 export async function createSubscription(companyId, planId, companyName, payerEmail) {
-  const plan = PLANS[planId];
+  const plans = await getPlans();
+  const plan = plans[planId];
   if (!plan) throw new Error(`Plano inválido: ${planId}`);
 
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
@@ -142,6 +122,7 @@ export async function getSubscriptionStatus(subscriptionId) {
 
 export async function createCustomLink(companyId, amount, description) {
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
   const preference = await mpRequest('POST', '/checkout/preferences', {
     items: [
@@ -153,8 +134,17 @@ export async function createCustomLink(companyId, amount, description) {
         unit_price: parseFloat(amount),
       },
     ],
+    payment_methods: {
+      excluded_payment_types: [], // Permite todos: cartão, PIX, boleto
+    },
     external_reference: JSON.stringify({ type: 'custom', companyId }),
     notification_url: `${backendUrl}/plans/webhook`,
+    back_urls: {
+      success: `${frontendUrl}/admin/plans?payment=success`,
+      failure: `${frontendUrl}/admin/plans?payment=failure`,
+      pending: `${frontendUrl}/admin/plans?payment=pending`,
+    },
+    auto_return: 'approved',
   });
 
   return {

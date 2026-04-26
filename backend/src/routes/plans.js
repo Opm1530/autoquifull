@@ -9,7 +9,6 @@
 
 import { Router } from 'express';
 import {
-  createImplementationFeeLink,
   createSubscription,
   createCustomLink,
   cancelSubscription,
@@ -17,6 +16,7 @@ import {
   processWebhook,
   generateOrderPix,
   processVendaWebhook,
+  getPlans,
 } from '../services/mercadopago.js';
 import { getDb } from '../config/firebase.js';
 
@@ -46,11 +46,6 @@ router.post('/payment-link', async (req, res) => {
     let result;
 
     switch (type) {
-      case 'implementation':
-        if (!planId) return res.status(400).json({ error: 'planId obrigatório para implementation' });
-        result = await createImplementationFeeLink(companyId, planId, companyName);
-        break;
-
       case 'subscription':
         if (!planId) return res.status(400).json({ error: 'planId obrigatório para subscription' });
         result = await createSubscription(companyId, planId, companyName, payerEmail);
@@ -62,7 +57,7 @@ router.post('/payment-link', async (req, res) => {
         break;
 
       default:
-        return res.status(400).json({ error: `Tipo inválido: ${type}. Use: implementation, subscription, custom` });
+        return res.status(400).json({ error: `Tipo inválido: ${type}. Use: subscription, custom` });
     }
 
     res.json({ ok: true, ...result });
@@ -144,6 +139,37 @@ router.post('/cancel', async (req, res) => {
     res.json({ ok: true, message: 'Assinatura cancelada' });
   } catch (err) {
     console.error('[Plans] Erro ao cancelar:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Configuração pública dos planos ─────────────────────────
+
+/**
+ * GET /plans/config — retorna planos (público, usado pela landing page e admin).
+ */
+router.get('/config', async (req, res) => {
+  try {
+    const plans = await getPlans();
+    res.json({ ok: true, plans });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /plans/config — salva configurações dos planos no Firestore (admin only).
+ */
+router.post('/config', async (req, res) => {
+  const { plans } = req.body;
+  if (!plans || typeof plans !== 'object') {
+    return res.status(400).json({ error: 'Campo plans obrigatório' });
+  }
+  try {
+    const db = getDb();
+    await db.collection('settings').doc('plans').set(plans, { merge: true });
+    res.json({ ok: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

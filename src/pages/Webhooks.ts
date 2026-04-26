@@ -47,8 +47,9 @@ export const Webhooks = async () => {
     const funcaoLabels: Record<string, { label: string; color: string; icon: string }> = {
         agendamento: { label: 'IA Agendamento', color: '#6366f1', icon: 'fa-calendar-alt' },
         venda:       { label: 'IA Vendas',       color: '#10b981', icon: 'fa-cart-shopping' },
-        atendimento: { label: 'IA Atendimento',  color: '#f59e0b', icon: 'fa-comments' },
+        catalogo:    { label: 'Catálogo',         color: '#8b5cf6', icon: 'fa-store' },
         disparo:     { label: 'Disparo',          color: '#64748b', icon: 'fa-paper-plane' },
+        atendimento: { label: 'IA Atendimento',  color: '#f59e0b', icon: 'fa-comments' }, // legado
     };
 
     const renderInstances = () => {

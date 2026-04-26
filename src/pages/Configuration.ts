@@ -356,10 +356,15 @@ export const Configuration = async () => {
         const msgs = config?.mensagens_automaticas || {};
         const promptIa = config?.prompt_ia || activeStore.prompt_ia || '';
 
-        // Módulo ativo da empresa — determina quais seções exibir
-        const activeModules: string[] = company.modulos_ativos || ['atendimento'];
-        const isVenda      = activeModules.includes('venda');
+        // Módulos ativos — determinam quais seções exibir
+        const activeModules: string[] = company.modulos_ativos || ['venda'];
+        const isCatalogo    = activeModules.includes('catalogo');
+        const isVenda       = activeModules.includes('venda');
         const isAgendamento = activeModules.includes('agendamento');
+        const isDisparo     = activeModules.includes('disparo');
+
+        // Seções que aparecem quando há pedidos (venda direta ou catálogo)
+        const hasOrders = isVenda || isCatalogo;
 
         const contentArea = document.getElementById('config-content-area');
         if (!contentArea) return;
@@ -476,7 +481,7 @@ export const Configuration = async () => {
                 </div>
             </div>
 
-            ${isVenda ? `<div class="card" style="margin-bottom: 1.5rem;">
+            ${hasOrders ? `<div class="card" style="margin-bottom: 1.5rem;">
                 <div class="config-section-title">
                     <i class="fa-solid fa-truck" style="color:var(--primary);"></i> Horário de Entrega
                 </div>
@@ -522,7 +527,7 @@ export const Configuration = async () => {
                 </div>
             </div>` : ''}
 
-            ${isVenda ? `<div class="card">
+            ${hasOrders ? `<div class="card">
                 <div class="config-section-title">
                     <i class="fa-solid fa-message" style="color:var(--primary);"></i> Mensagens Automáticas
                 </div>
@@ -539,7 +544,7 @@ export const Configuration = async () => {
                 </div>
             </div>` : ''}
 
-            ${isVenda ? `<div class="card" style="margin-top: 1.5rem;">
+            ${isCatalogo ? `<div class="card" style="margin-top: 1.5rem;">
                 <div class="config-section-title">
                     <i class="fa-solid fa-store" style="color:var(--primary);"></i> Configurações do Catálogo
                 </div>
@@ -675,13 +680,13 @@ export const Configuration = async () => {
                 if (newInstId) {
                     const inst = instances.find(i => i.id === newInstId);
                     if (inst) {
-                        // Detect active module/function
-                        const activeModules = company.modulos_ativos || ['atendimento'];
-                        let funcao = 'atendimento';
-                        if (activeModules.includes('venda')) funcao = 'venda';
-                        else if (activeModules.includes('agendamento')) funcao = 'agendamento';
-                        else if (activeModules.includes('atendimento')) funcao = 'atendimento';
-                        else if (activeModules.includes('disparo')) funcao = 'disparo';
+                        // Detecta função da instância com base nos módulos ativos
+                        const mods = company.modulos_ativos || ['venda'];
+                        let funcao = 'venda'; // padrão
+                        if (mods.includes('venda'))       funcao = 'venda';
+                        else if (mods.includes('agendamento')) funcao = 'agendamento';
+                        else if (mods.includes('catalogo'))   funcao = 'catalogo';
+                        else if (mods.includes('disparo'))    funcao = 'disparo';
 
                         // Monta webhook a partir da URL do backend próprio (settings/backend)
                         // Formato: {backendUrl}/webhook/evolution/{instanceName}

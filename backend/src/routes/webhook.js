@@ -77,8 +77,8 @@ async function processWebhook(instanceNameParam, body) {
 
   log.debug('Webhook', `Instância resolvida → empresa=${companyId} loja=${storeId || 'global'} funcao=${funcao}`);
 
-  // Funções suportadas: agendamento e venda
-  if (funcao !== 'agendamento' && funcao !== 'venda') {
+  // Funções suportadas: agendamento, venda e catalogo
+  if (!['agendamento', 'venda', 'catalogo'].includes(funcao)) {
     log.warn('Webhook', `Função '${funcao}' não suportada — ignorando`);
     return;
   }
@@ -91,9 +91,20 @@ async function processWebhook(instanceNameParam, body) {
   }
 
   const modulos = company.modulos_ativos || [];
-  const moduloRequerido = funcao === 'venda' ? 'venda' : 'agendamento';
-  if (!modulos.includes(moduloRequerido)) {
+  // catalogo pode rodar com módulo 'catalogo', 'venda' ou 'agendamento'
+  let moduloRequerido;
+  if (funcao === 'venda') moduloRequerido = 'venda';
+  else if (funcao === 'agendamento') moduloRequerido = 'agendamento';
+  else moduloRequerido = null; // catalogo — verifica abaixo
+
+  if (moduloRequerido && !modulos.includes(moduloRequerido)) {
     log.warn('Webhook', `Módulo '${moduloRequerido}' inativo para empresa ${companyId} — ignorando`);
+    return;
+  }
+
+  // Para funcao='catalogo', exige pelo menos catalogo, venda ou agendamento
+  if (funcao === 'catalogo' && !modulos.some(m => ['catalogo', 'venda', 'agendamento'].includes(m))) {
+    log.warn('Webhook', `Nenhum módulo compatível com catálogo ativo para empresa ${companyId} — ignorando`);
     return;
   }
 

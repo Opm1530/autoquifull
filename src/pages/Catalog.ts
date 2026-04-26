@@ -38,7 +38,7 @@ export const Catalog = async (storeId: string) => {
         }
 
         const modulos = company.modulos_ativos || [];
-        const hasVendaCatalogo = modulos.includes('venda_catalogo');
+        const hasVendaCatalogo = modulos.includes('catalogo');
 
         const productsRaw = await dbService.getAll('products', { field: 'companyId', operator: '==', value: company.id }) as any[];
         const categories = await dbService.getAll('categories', { field: 'companyId', operator: '==', value: company.id }) as any[];

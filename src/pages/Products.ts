@@ -48,7 +48,7 @@ export const Products = async () => {
     const companyDoc = await dbService.get('companies', currentUser.companyId);
     const company = companyDoc as any;
     const modulos = company?.modulos_ativos || [];
-    const isProductsEnabled = modulos.includes('venda') || modulos.includes('agendamento') || modulos.includes('venda_catalogo');
+    const isProductsEnabled = modulos.includes('venda') || modulos.includes('agendamento') || modulos.includes('catalogo');
     const isAgendamento = modulos.includes('agendamento');
     const labelSingular = isAgendamento ? 'Serviço' : 'Produto';
     const labelPlural = isAgendamento ? 'Serviços' : 'Produtos';

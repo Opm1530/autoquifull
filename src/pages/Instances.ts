@@ -112,6 +112,7 @@ export const Instances = async () => {
         switch (funcao) {
             case 'agendamento': return 'primary';
             case 'venda': return 'success';
+            case 'catalogo': return 'info';
             default: return 'secondary';
         }
     };
@@ -120,6 +121,7 @@ export const Instances = async () => {
         switch (funcao) {
             case 'agendamento': return '📅 Agendamento';
             case 'venda': return '🛍️ Vendas';
+            case 'catalogo': return '🏪 Catálogo';
             default: return 'Sem função';
         }
     };
@@ -160,8 +162,9 @@ export const Instances = async () => {
                     <label>Função da IA</label>
                     <select id="edit-funcao" class="form-control">
                         <option value="">— Sem função —</option>
-                        <option value="agendamento">📅 Agendamento</option>
-                        <option value="venda">🛍️ Vendas (WhatsApp)</option>
+                        <option value="venda">🛍️ IA Vendas (WhatsApp)</option>
+                        <option value="agendamento">📅 IA Agendamento</option>
+                        <option value="catalogo">🏪 Catálogo</option>
                     </select>
                     <small style="color: var(--text-dim); margin-top: 0.4rem; display: block;">
                         Determina qual IA responde às mensagens desta instância.

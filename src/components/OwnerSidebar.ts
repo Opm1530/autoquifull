@@ -12,12 +12,12 @@ export const OwnerSidebar = async () => {
         try {
             const companyDoc = await dbService.get('companies', user.companyId);
             const company = companyDoc as any;
-            const modulos = company?.modulos_ativos || ['atendimento'];
+            const modulos = company?.modulos_ativos || ['venda'];
 
             if (modulos.includes('venda')) showVenda = true;
             if (modulos.includes('agendamento')) showAgendamento = true;
             if (modulos.includes('disparo')) showDisparo = true;
-            if (modulos.includes('venda_catalogo')) showVendaCatalogo = true;
+            if (modulos.includes('catalogo')) showVendaCatalogo = true;
         } catch (error) {
             console.error('Error fetching company for sidebar:', error);
         }

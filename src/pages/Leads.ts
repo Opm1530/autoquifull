@@ -63,7 +63,7 @@ export const Leads = async () => {
     // Check modules to hide atendimento status if only catalog is active
     const company = await dbService.get('companies', currentUser.companyId) as any;
     const modulos = company?.modulos_ativos || [];
-    const isOnlyCatalog = modulos.includes('venda_catalogo') && !modulos.includes('atendimento');
+    const isOnlyCatalog = modulos.includes('catalogo') && !modulos.includes('venda');
 
     // ── active filter state ──
     let activeFilter = 'todos';

@@ -57,23 +57,23 @@ export const MercadoPago = async () => {
                 mercadoPagoToken: token
             });
 
-            // 2. Call individual webhook to handle extra logic (like fetching discovery data)
-            const response = await fetch('https://n8n.vps.pequi.digital/webhook/autoqui-userId-mercadopago', {
+            // 2. Valida token e busca dados da conta via backend próprio
+            const response = await fetch('/mp/connect', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     accessToken: token,
                     companyId: user.companyId
                 })
             });
 
+            const result = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                throw new Error('Falha ao processar a conexão via servidor.');
+                throw new Error(result?.error || 'Falha ao processar a conexão via servidor.');
             }
 
-            toast.success('Integração processada com sucesso!');
+            toast.success(`MercadoPago conectado! Conta: ${result.email || result.nome || 'OK'}`);
 
             // Reload page to fetch updated data from Firebase
             setTimeout(() => {

@@ -2,7 +2,7 @@ import './style.css';
 import { AdminSidebar } from './components/AdminSidebar';
 import { OwnerSidebar } from './components/OwnerSidebar';
 import { EmployeeSidebar } from './components/EmployeeSidebar';
-import { Topbar } from './components/Topbar';
+import { Topbar, initTheme } from './components/Topbar';
 import { Dashboard } from './pages/Dashboard';
 import { Orders } from './pages/Orders';
 import { Products } from './pages/Products';
@@ -182,6 +182,7 @@ class App {
                 ${sidebarHtml}
                 <main class="main-content">
                     ${Topbar(pageTitle)}
+                    <!-- initTheme é chamado abaixo via setTimeout -->
                     <div id="page-content" class="page-container">
                         <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 50vh; flex-direction: column; gap: 1rem;">
                             <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
@@ -191,6 +192,9 @@ class App {
                 </main>
             </div>
         `;
+
+    // Inicializa tema e botão de toggle após o Topbar estar no DOM
+    setTimeout(() => initTheme(), 0);
 
     try {
         const content = await this.getPageContent(path);

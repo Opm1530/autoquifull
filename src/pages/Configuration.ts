@@ -356,6 +356,11 @@ export const Configuration = async () => {
         const msgs = config?.mensagens_automaticas || {};
         const promptIa = config?.prompt_ia || activeStore.prompt_ia || '';
 
+        // Módulo ativo da empresa — determina quais seções exibir
+        const activeModules: string[] = company.modulos_ativos || ['atendimento'];
+        const isVenda      = activeModules.includes('venda');
+        const isAgendamento = activeModules.includes('agendamento');
+
         const contentArea = document.getElementById('config-content-area');
         if (!contentArea) return;
 
@@ -471,7 +476,7 @@ export const Configuration = async () => {
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom: 1.5rem;">
+            ${isVenda ? `<div class="card" style="margin-bottom: 1.5rem;">
                 <div class="config-section-title">
                     <i class="fa-solid fa-truck" style="color:var(--primary);"></i> Horário de Entrega
                 </div>
@@ -515,9 +520,9 @@ export const Configuration = async () => {
                         <i class="fa-solid fa-floppy-disk"></i> Salvar Horários de Entrega
                     </button>
                 </div>
-            </div>
+            </div>` : ''}
 
-            <div class="card">
+            ${isVenda ? `<div class="card">
                 <div class="config-section-title">
                     <i class="fa-solid fa-message" style="color:var(--primary);"></i> Mensagens Automáticas
                 </div>
@@ -532,9 +537,9 @@ export const Configuration = async () => {
                 <div id="msg-editors">
                     ${buildMsgEditors()}
                 </div>
-            </div>
+            </div>` : ''}
 
-            <div class="card" style="margin-top: 1.5rem;">
+            ${isVenda ? `<div class="card" style="margin-top: 1.5rem;">
                 <div class="config-section-title">
                     <i class="fa-solid fa-store" style="color:var(--primary);"></i> Configurações do Catálogo
                 </div>
@@ -586,10 +591,10 @@ export const Configuration = async () => {
                          <i class="fa-solid fa-floppy-disk"></i> Salvar Configurações
                     </button>
                 </div>
-            </div>
+            </div>` : ''}
 
-            <!-- ── Integrações ──────────────────────────────────────── -->
-            <div class="card" style="margin-bottom:1.5rem;">
+            <!-- ── Integrações — apenas agendamento ──────────────────── -->
+            ${isAgendamento ? `<div class="card" style="margin-bottom:1.5rem;">
                 <div class="config-section-title" style="display:flex;align-items:center;justify-content:space-between;">
                     <span><i class="fa-solid fa-puzzle-piece" style="color:var(--primary);"></i> Integrações</span>
                     <button id="btn-reload-integrations" class="btn-secondary" style="font-size:0.8rem;padding:4px 10px;">
@@ -604,7 +609,7 @@ export const Configuration = async () => {
                         <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando integrações...
                     </div>
                 </div>
-            </div>
+            </div>` : ''}
         `;
 
         // Wait to populate and setup binds
@@ -678,9 +683,11 @@ export const Configuration = async () => {
                         else if (activeModules.includes('atendimento')) funcao = 'atendimento';
                         else if (activeModules.includes('disparo')) funcao = 'disparo';
 
-                        // Fetch global webhook
-                        const webhookSettings = await dbService.get('settings', 'webhooks') as any;
-                        const webhookUrl = webhookSettings ? webhookSettings[funcao] : null;
+                        // Monta webhook a partir da URL do backend próprio (settings/backend)
+                        // Formato: {backendUrl}/webhook/evolution/{instanceName}
+                        const backendSettings = await dbService.get('settings', 'backend') as any;
+                        const backendUrl = (backendSettings?.url || '').replace(/\/$/, '');
+                        const webhookUrl = backendUrl ? `${backendUrl}/webhook/evolution/${inst.nome}` : null;
 
                         toast.info(`Vinculando instância e configurando webhook (${funcao})...`);
 
@@ -697,8 +704,10 @@ export const Configuration = async () => {
                             if (!webhookSet) {
                                 toast.warning('Configuração salva, mas houve uma falha ao ativar o webhook na API.');
                             } else {
-                                toast.success('Webhook configurado com sucesso!');
+                                toast.success(`Webhook configurado: ${webhookUrl}`);
                             }
+                        } else {
+                            toast.warning('Backend URL não configurada. Acesse Configurações → Backend para definir a URL e sincronizar o webhook manualmente.');
                         }
                     }
                 } else if (previousInstId) {

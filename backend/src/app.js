@@ -7,6 +7,7 @@ import calendarRouter from './routes/calendar.js';
 import plansRouter from './routes/plans.js';
 import ordersRouter from './routes/orders.js';
 import adminRouter from './routes/admin.js';
+import mpConnectRouter from './routes/mp-connect.js';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/calendar', calendarRouter);
 app.use('/plans', plansRouter);
 app.use('/orders', ordersRouter);
 app.use('/admin', adminRouter);
+app.use('/mp', mpConnectRouter);
 
 // ── Frontend estático ─────────────────────────────────────────
 // Node serve os arquivos do build do Vite diretamente

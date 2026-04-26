@@ -361,7 +361,7 @@ export const Configuration = async () => {
         const isCatalogo    = activeModules.includes('catalogo');
         const isVenda       = activeModules.includes('venda');
         const isAgendamento = activeModules.includes('agendamento');
-        const isDisparo     = activeModules.includes('disparo');
+        void activeModules.includes('disparo'); // reservado para uso futuro
 
         // Seções que aparecem quando há pedidos (venda direta ou catálogo)
         const hasOrders = isVenda || isCatalogo;

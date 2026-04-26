@@ -452,9 +452,9 @@ export const Campaigns = async () => {
 
         <!-- Detail Modal -->
         <div id="campaign-detail-modal" class="modal hidden">
-            <div class="modal-content glass" style="max-width: 850px;">
+            <div class="modal-content glass" style="max-width: 850px; max-height: 90vh; display: flex; flex-direction: column;">
                 <span class="close-modal" id="close-detail-modal">&times;</span>
-                <div id="campaign-detail-content"></div>
+                <div id="campaign-detail-content" style="overflow-y: auto; padding-right: 4px;"></div>
             </div>
         </div>
     `;
@@ -1167,7 +1167,12 @@ export const Campaigns = async () => {
                     `).join('')}
             </div>
 
-            ${(c.falhas_log?.length > 0) ? `
+            ${(c.falhas > 0 && !c.falhas_log) ? `
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 1rem 1.25rem; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.25); border-radius: 10px; margin-top: 1.5rem; color: #f59e0b; font-size: 0.88rem; line-height: 1.5;">
+                <i class="fa-solid fa-circle-info" style="margin-top: 2px; flex-shrink: 0;"></i>
+                <span>Esta campanha registrou <strong>${c.falhas} falha(s)</strong>, mas foi processada antes do relatório de erros ser ativado. Novas campanhas terão o detalhamento completo dos erros.</span>
+            </div>
+            ` : (c.falhas_log?.length > 0) ? `
             <div class="card" style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.25); padding: 1.5rem; margin-top: 1.5rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 600;">

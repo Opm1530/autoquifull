@@ -42,7 +42,7 @@ const TOOLS = [
     function: {
       name: 'get_catalog',
       description:
-        'Lista todos os produtos disponíveis para venda, organizados por categoria. Use no início da conversa ou quando o cliente pedir o cardápio/catálogo.',
+        'Lista todos os produtos disponíveis para venda, organizados por categoria. Use IMEDIATAMENTE quando o cliente demonstrar interesse em comprar ou pedir o cardápio — não avise que vai buscar, chame diretamente e mostre o resultado.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -111,7 +111,7 @@ const TOOLS = [
     function: {
       name: 'set_delivery_info',
       description:
-        'Registra as informações de entrega: tipo (entrega/retirada), endereço e nome do cliente. Chame esta ferramenta quando tiver coletado todos os dados necessários.',
+        'Registra as informações de entrega: tipo (entrega/retirada), endereço e nome do cliente. Chame IMEDIATAMENTE quando tiver coletado todos os dados — não avise que vai registrar. Se o carrinho ainda estiver vazio após registrar a entrega, chame get_catalog em seguida para mostrar o cardápio ao cliente.',
       parameters: {
         type: 'object',
         properties: {
@@ -138,7 +138,7 @@ const TOOLS = [
     function: {
       name: 'confirm_order',
       description:
-        'Finaliza o pedido: cria no Firestore e gera link de pagamento se necessário. Use somente após confirmar com o cliente todos os itens, quantidade, entrega e forma de pagamento.',
+        'Finaliza o pedido: cria no Firestore e gera link de pagamento se necessário. Use IMEDIATAMENTE quando o cliente confirmar a forma de pagamento e você já tiver: carrinho montado, dados de entrega (set_delivery_info já chamado) e pagamento escolhido. Não diga "um momento" — chame esta ferramenta agora e informe o resultado ao cliente.',
       parameters: {
         type: 'object',
         properties: {
@@ -217,19 +217,37 @@ ${paymentOptions}
 
 ENTREGA: ${deliveryInfo}
 
+═══════════════════════════════════════════
+REGRA CRÍTICA — EXECUTE, NÃO ANUNCIE:
+Nunca escreva frases como "vou buscar o cardápio", "um momento", "deixa eu verificar", "vou finalizar agora". Essas frases criam falsas expectativas — o cliente fica aguardando algo que nunca chega. SEMPRE execute a ferramenta imediatamente e responda com o resultado pronto. Cada mensagem sua deve ser completa e autossuficiente.
+═══════════════════════════════════════════
+
+FLUXO OBRIGATÓRIO — siga esta ordem sem desvios:
+1. Cliente quer pedir → chame get_catalog AGORA → mostre o cardápio na mesma resposta
+2. Cliente escolhe item → chame add_to_cart AGORA → confirme o item adicionado
+3. Após carrinho montado → colete nome e tipo de entrega (e endereço se for entrega) → chame set_delivery_info AGORA
+4. Após entrega registrada → pergunte a forma de pagamento
+5. Cliente informa pagamento → chame confirm_order AGORA → informe o resultado ao cliente na mesma resposta
+
 REGRAS FUNDAMENTAIS:
 1. Nunca revele que é uma IA — atue como atendente humano.
 2. Seja cordial, objetivo e use linguagem natural e amigável.
 3. Sempre que o cliente demonstrar interesse em um produto, use add_to_cart imediatamente.
-4. Antes de finalizar o pedido, exiba o carrinho (view_cart) e confirme com o cliente.
+4. Antes de finalizar, mostre o carrinho com view_cart e confirme os itens com o cliente.
 5. Colete: nome do cliente e tipo de entrega. Se for entrega, colete o endereço completo.
 6. Pergunte a forma de pagamento antes de usar confirm_order.
-7. Nunca confirme que o pedido foi criado — aguarde o resultado de confirm_order.
+7. Nunca diga que o pedido foi criado antes de receber o resultado de confirm_order — use o resultado retornado pela ferramenta para informar o cliente.
 8. Se o carrinho estiver vazio, não ofereça confirmação de pedido.
 9. Mensagens curtas e naturais — máximo 3 parágrafos por resposta.
 10. Use emojis com moderação para tornar a conversa amigável.
 11. Ao mostrar o catálogo, organize por categoria e inclua preços.
-12. Para produtos promocionais, destaque o preço promocional.${returningCustomerSection}`;
+12. Para produtos promocionais, destaque o preço promocional.
+
+EXEMPLOS DO QUE NUNCA FAZER:
+✗ "Vou buscar o cardápio agora! 🍽️" → chame get_catalog e mostre o cardápio direto
+✗ "Um momento, vou finalizar seu pedido! 😊" → chame confirm_order e informe o resultado
+✗ "Deixa eu verificar o carrinho..." → chame view_cart e mostre o carrinho direto
+✗ "Vou registrar seu endereço!" → chame set_delivery_info e confirme o registro${returningCustomerSection}`;
 
   if (customPrompt?.trim()) {
     return `${base}\n\nINSTRUÇÕES ADICIONAIS DO ESTABELECIMENTO:\n${customPrompt}`;
@@ -270,7 +288,12 @@ async function executeTool(toolName, args, context) {
         });
       }
 
-      return { categories: byCategory, total_products: catalog.length };
+      const zeroPriceCount = catalog.filter(p => !p.price && !p.promotionalPrice).length;
+      return {
+        categories: byCategory,
+        total_products: catalog.length,
+        ...(zeroPriceCount > 0 ? { warning: `${zeroPriceCount} produto(s) com preço R$ 0,00 — informe o cliente que o preço será confirmado pelo estabelecimento.` } : {}),
+      };
     }
 
     // ── Carrinho ──────────────────────────────────────────────

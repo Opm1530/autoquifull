@@ -187,26 +187,40 @@ export async function getLeadByPhone(companyId, phone) {
 
 /**
  * Cria ou atualiza um lead.
+ *
+ * Apenas os campos explicitamente presentes em `data` são gravados.
+ * Campos ausentes NÃO sobrescrevem valores existentes no Firestore.
  */
 export async function upsertLead(companyId, storeId, phone, data = {}) {
   const db = getDb();
   const existing = await getLeadByPhone(companyId, phone);
 
-  const payload = {
+  // Campos obrigatórios na criação
+  const base = {
     empresaId: companyId,
-    lojaId: storeId || null,
     telefone: phone,
-    nome: data.nome || data.name || 'Cliente',
-    statusAtendimento: data.statusAtendimento || 'bot',
-    statusLead: data.statusLead || 'novo',
     updatedAt: FieldValue.serverTimestamp(),
   };
 
+  // Campos opcionais — só inclui se explicitamente passados
+  if (storeId)                              base.lojaId            = storeId;
+  if (data.nome   || data.name)             base.nome              = data.nome || data.name;
+  if (data.statusAtendimento)               base.statusAtendimento = data.statusAtendimento;
+  if (data.statusLead)                      base.statusLead        = data.statusLead;
+  if (data.ultimoEndereco !== undefined)    base.ultimoEndereco    = data.ultimoEndereco;
+
   if (existing) {
-    await db.collection('leads').doc(existing.id).update(payload);
-    return { id: existing.id, ...existing, ...payload };
+    await db.collection('leads').doc(existing.id).update(base);
+    return { id: existing.id, ...existing, ...base };
   } else {
-    payload.criadoEm = FieldValue.serverTimestamp();
+    // Na criação, preenche defaults para campos ainda não definidos
+    const payload = {
+      nome: 'Cliente',
+      statusAtendimento: 'bot',
+      statusLead: 'novo',
+      criadoEm: FieldValue.serverTimestamp(),
+      ...base,
+    };
     const ref = await db.collection('leads').add(payload);
     return { id: ref.id, ...payload };
   }

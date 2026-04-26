@@ -1078,6 +1078,16 @@ export const Campaigns = async () => {
                 const confirmed = await confirm.danger('Cancelar Campanha', 'Você tem certeza que deseja cancelar esta campanha? Ela será interrompida e nenhum outro envio será feito.');
                 if (confirmed) {
                     try {
+                        // Re-lê o status atual do Firestore para evitar sobrescrever 'finalizada'
+                        const fresh = await dbService.get('campanhas', id) as any;
+                        if (fresh?.status === 'finalizada') {
+                            toast.error('Esta campanha já foi concluída e não pode ser cancelada.');
+                            return;
+                        }
+                        if (fresh?.status === 'cancelada') {
+                            toast.error('Esta campanha já está cancelada.');
+                            return;
+                        }
                         await dbService.update('campanhas', id, { status: 'cancelada' });
                         toast.success('Campanha cancelada com sucesso.');
                     } catch (error) {

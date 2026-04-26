@@ -41,6 +41,37 @@ async function request(method, path, body) {
   }
 }
 
+/**
+ * Versão detalhada do request — retorna { data, error } em vez de null.
+ * Usada onde precisamos capturar o motivo exato da falha (ex: campanhas).
+ */
+async function requestDetailed(method, path, body) {
+  const url = `${BASE_URL}${path}`;
+  const opts = { method, headers: headers() };
+  if (body) opts.body = JSON.stringify(body);
+
+  try {
+    const res = await fetch(url, opts);
+    const raw = await res.text().catch(() => '');
+
+    if (!res.ok) {
+      // Tenta extrair mensagem legível do JSON de erro da Evolution API
+      let errorMsg = `HTTP ${res.status}`;
+      try {
+        const json = JSON.parse(raw);
+        errorMsg = json?.message || json?.error || json?.response?.message || errorMsg;
+        if (Array.isArray(errorMsg)) errorMsg = errorMsg.join(', ');
+      } catch { errorMsg = `HTTP ${res.status}: ${raw.slice(0, 120)}`; }
+      return { data: null, error: errorMsg };
+    }
+
+    try { return { data: JSON.parse(raw), error: null }; }
+    catch { return { data: null, error: 'Resposta inválida da API' }; }
+  } catch (err) {
+    return { data: null, error: `Falha de rede: ${err.message}` };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // Mensagens recebidas — parse do webhook MESSAGES_UPSERT
 // ─────────────────────────────────────────────────────────────
@@ -137,6 +168,32 @@ export async function sendText(instanceName, phone, text) {
   }
 
   return !!result;
+}
+
+/**
+ * Versão detalhada do sendText — retorna { ok, error } com o motivo exato da falha.
+ * Usada no job de campanhas para popular o relatório de erros.
+ */
+export async function sendTextDetailed(instanceName, phone, text) {
+  const cleanPhone = phone.replace(/\D/g, '');
+  const number = cleanPhone.length <= 11 && !cleanPhone.startsWith('55')
+    ? '55' + cleanPhone
+    : cleanPhone;
+
+  const { data, error } = await requestDetailed('POST', `/message/sendText/${instanceName}`, {
+    number,
+    text,
+    delay: 1200,
+    linkPreview: false,
+  });
+
+  if (data) {
+    log.send('Evolution', `${phone} via [${instanceName}] — enviado (${text.length} chars)`);
+    return { ok: true, error: null };
+  } else {
+    log.warn('Evolution', `${phone} via [${instanceName}] — falha: ${error}`);
+    return { ok: false, error };
+  }
 }
 
 /**

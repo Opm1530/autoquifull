@@ -22,7 +22,7 @@
 import cron from 'node-cron';
 import { getDb } from '../config/firebase.js';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { sendText } from '../services/evolution.js';
+import { sendTextDetailed } from '../services/evolution.js';
 import { log } from '../utils/logger.js';
 
 // Evita que duas execuções do cron processem a mesma campanha simultâneamente
@@ -167,13 +167,13 @@ async function processCampaign(db, doc) {
       // Substitui variáveis na mensagem
       const finalMsg = interpolate(msg, lead);
 
-      // Envia via Evolution
-      const ok = await sendText(instanceName, phone, finalMsg);
+      // Envia via Evolution — captura o erro exato da API
+      const { ok, error: sendError } = await sendTextDetailed(instanceName, phone, finalMsg);
 
       if (ok) {
         enviados++;
       } else {
-        addFalha(leadId, lead.nome, phone, 'Falha no envio — instância offline ou número inválido no WhatsApp');
+        addFalha(leadId, lead.nome, phone, sendError || 'Falha no envio — instância offline ou número inválido');
       }
 
       // Atualiza contadores no Firestore a cada envio (sem bloquear o loop)
@@ -194,7 +194,22 @@ async function processCampaign(db, doc) {
     }
   }
 
-  // 6. Finaliza campanha — salva log de falhas junto
+  // 6. Verifica se foi cancelada manualmente durante o processamento
+  const currentDoc = await db.collection('campanhas').doc(campaignId).get();
+  const currentStatus = currentDoc.data()?.status;
+
+  if (currentStatus === 'cancelada') {
+    // Respeita o cancelamento — apenas salva os contadores e o log parcial
+    await db.collection('campanhas').doc(campaignId).update({
+      enviados,
+      falhas,
+      falhas_log: falhasLog,
+    });
+    log.warn('Campaign', `Campanha "${campaign.nome}" cancelada manualmente durante o processamento (${enviados} já enviados)`);
+    return;
+  }
+
+  // 7. Finaliza campanha — salva log de falhas junto
   await db.collection('campanhas').doc(campaignId).update({
     status: 'finalizada',
     enviados,

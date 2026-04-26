@@ -122,14 +122,30 @@ async function processCampaign(db, doc) {
   let enviados = 0;
   let falhas = 0;
 
+  /** @type {{ leadId: string, nome: string, telefone: string, motivo: string, ts: string }[]} */
+  const falhasLog = [];
+
+  // Helper para registrar falha com contexto
+  const addFalha = (leadId, nome, telefone, motivo) => {
+    falhas++;
+    falhasLog.push({
+      leadId,
+      nome: nome || '(sem nome)',
+      telefone: telefone || '(sem telefone)',
+      motivo,
+      ts: new Date().toISOString(),
+    });
+  };
+
   // 5. Processa cada lead
-  for (const leadId of leadIds) {
+  for (let i = 0; i < leadIds.length; i++) {
+    const leadId = leadIds[i];
     try {
       // Lê o lead
       const leadDoc = await db.collection('leads').doc(leadId).get();
       if (!leadDoc.exists) {
         log.warn('Campaign', `Lead ${leadId} não encontrado — pulando`);
-        falhas++;
+        addFalha(leadId, '', '', 'Lead não encontrado no banco de dados');
         continue;
       }
 
@@ -141,7 +157,7 @@ async function processCampaign(db, doc) {
 
       if (!phone) {
         log.warn('Campaign', `Lead ${leadId} sem telefone — pulando`);
-        falhas++;
+        addFalha(leadId, lead.nome, '', 'Sem número de telefone cadastrado');
         continue;
       }
 
@@ -157,32 +173,33 @@ async function processCampaign(db, doc) {
       if (ok) {
         enviados++;
       } else {
-        falhas++;
+        addFalha(leadId, lead.nome, phone, 'Falha no envio — instância offline ou número inválido no WhatsApp');
       }
 
-      // Atualiza contadores no Firestore a cada envio
-      await db.collection('campanhas').doc(campaignId).update({
+      // Atualiza contadores no Firestore a cada envio (sem bloquear o loop)
+      db.collection('campanhas').doc(campaignId).update({
         enviados,
         falhas,
       }).catch(() => {});
 
     } catch (err) {
       log.error('Campaign', `Erro ao enviar para lead ${leadId}: ${err.message}`);
-      falhas++;
+      addFalha(leadId, '', '', `Erro inesperado: ${err.message}`);
     }
 
     // Aguarda delay aleatório entre min e max (não aguarda após o último)
-    if (leadIds.indexOf(leadId) < leadIds.length - 1) {
+    if (i < leadIds.length - 1) {
       const delay = delayMin + Math.random() * (delayMax - delayMin);
       await sleep(delay);
     }
   }
 
-  // 6. Finaliza campanha
+  // 6. Finaliza campanha — salva log de falhas junto
   await db.collection('campanhas').doc(campaignId).update({
     status: 'finalizada',
     enviados,
     falhas,
+    falhas_log: falhasLog,
     data_fim: FieldValue.serverTimestamp(),
   });
 

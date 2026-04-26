@@ -1166,6 +1166,55 @@ export const Campaigns = async () => {
                         </div>
                     `).join('')}
             </div>
+
+            ${(c.falhas_log?.length > 0) ? `
+            <div class="card" style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.25); padding: 1.5rem; margin-top: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 600;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Relatório de Falhas
+                        <span style="background: rgba(239,68,68,0.15); color: #ef4444; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;">${c.falhas_log.length}</span>
+                    </div>
+                    <button onclick="
+                        const rows = ${JSON.stringify(c.falhas_log)};
+                        const csv = 'Nome,Telefone,Motivo,Horário\\n' + rows.map(r => \`\"\${r.nome}\",\"\${r.telefone}\",\"\${r.motivo}\",\"\${new Date(r.ts).toLocaleString()}\"\`).join('\\n');
+                        const a = document.createElement('a');
+                        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                        a.download = 'falhas_campanha.csv';
+                        a.click();
+                    " style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-download"></i> Exportar CSV
+                    </button>
+                </div>
+                <div style="overflow-x: auto; border-radius: 8px; border: 1px solid rgba(239,68,68,0.15);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: rgba(239,68,68,0.08);">
+                                <th style="padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;">Contato</th>
+                                <th style="padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;">Telefone</th>
+                                <th style="padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;">Motivo da Falha</th>
+                                <th style="padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;">Horário</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${c.falhas_log.map((f: any, idx: number) => `
+                                <tr style="border-top: 1px solid rgba(239,68,68,0.1); ${idx % 2 === 1 ? 'background: rgba(239,68,68,0.03);' : ''}">
+                                    <td style="padding: 10px 14px; color: var(--text-main); font-weight: 500;">${f.nome}</td>
+                                    <td style="padding: 10px 14px; color: var(--text-muted); font-family: monospace; font-size: 0.82rem;">${f.telefone}</td>
+                                    <td style="padding: 10px 14px; color: #fca5a5;">${f.motivo}</td>
+                                    <td style="padding: 10px 14px; color: var(--text-muted); font-size: 0.8rem; white-space: nowrap;">${new Date(f.ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ` : (c.status === 'finalizada' ? `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 1rem 1.25rem; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; margin-top: 1.5rem; color: #22c55e; font-size: 0.9rem;">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Todos os envios foram concluídos sem falhas.</span>
+            </div>
+            ` : '')}
         `;
         modal.classList.remove('hidden');
     }

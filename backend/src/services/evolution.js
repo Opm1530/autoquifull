@@ -96,7 +96,8 @@ export function parseIncomingMessage(body) {
     const remoteJid = key.remoteJid || '';
     const fromMe = key.fromMe || false;
     const messageId = key.id || '';
-    const instanceName = msg.instanceId || body?.instance || body?.instanceName || '';
+    // Prioridade: URL param (instanceName) > body.instance > instanceId (UUID interno da Evolution)
+    const instanceName = body?.instanceName || body?.instance || msg.instanceId || '';
 
     // Ignora mensagens enviadas pelo próprio bot
     if (fromMe) return null;

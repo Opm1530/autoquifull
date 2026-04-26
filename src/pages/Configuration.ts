@@ -2,6 +2,7 @@ import { dbService } from '../services/db';
 import { authService } from '../services/auth';
 import { toast } from '../services/toast';
 import { evolutionApi } from '../services/evolutionApi';
+import { backendApi } from '../services/backendApi';
 import { storage } from '../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -1135,8 +1136,7 @@ export const Configuration = async () => {
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Abrindo...';
 
             try {
-                const res = await fetch(`${backendUrl}/calendar/google/auth-url?companyId=${companyId}`);
-                const data = await res.json();
+                const data = await backendApi.get(`/calendar/google/auth-url?companyId=${companyId}`);
                 if (data.authUrl) {
                     window.open(data.authUrl, '_blank', 'width=500,height=600');
                     toast.info('Complete a autorização na janela aberta. Recarregue esta seção após autorizar.');
@@ -1179,12 +1179,7 @@ export const Configuration = async () => {
             try {
                 const apiKey = (document.getElementById('trinks-api-key') as HTMLInputElement).value.trim();
                 const estabId = (document.getElementById('trinks-estab-id') as HTMLInputElement).value.trim();
-                const res = await fetch(`${backendUrl}/calendar/trinks/test`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiKey, estabelecimentoId: estabId }),
-                });
-                const data = await res.json();
+                const data = await backendApi.post(`/calendar/trinks/test`, { apiKey, estabelecimentoId: estabId });
                 if (data.ok) toast.success(`Conexão com Trinks OK! ${data.salonName || ''}`);
                 else toast.error(data.error || 'Erro ao conectar ao Trinks.');
             } catch { toast.error('Falha ao testar conexão.'); }

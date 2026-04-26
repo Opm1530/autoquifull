@@ -10,6 +10,7 @@
 
 import { dbService } from '../services/db';
 import { toast } from '../services/toast';
+import { backendApi } from '../services/backendApi';
 
 // ── Definição dos Planos ──────────────────────────────────────
 const PLANS = [
@@ -439,24 +440,11 @@ function setupPlansListeners(companies: Company[], plans: typeof PLANS) {
         btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
 
         try {
-            // Busca URL do backend
-            const settings = await dbService.get('settings', 'backend') as any;
-            const backendUrl = settings?.url;
-            if (!backendUrl) {
-                toast.error('Configure a URL do backend primeiro em "Config. Backend".');
-                return;
-            }
-
             const body: any = { companyId, type, planId };
             if (type === 'custom') { body.amount = customValue; body.description = customDesc; }
 
-            const res = await fetch(`${backendUrl}/plans/payment-link`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
+            const data = await backendApi.post('/plans/payment-link', body);
 
-            const data = await res.json();
             if (data.checkoutUrl) {
                 (document.getElementById('link-result-url') as HTMLInputElement).value = data.checkoutUrl;
                 document.getElementById('link-result')!.style.display = '';

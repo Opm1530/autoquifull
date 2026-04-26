@@ -1108,6 +1108,10 @@ export const Campaigns = async () => {
         const content = document.getElementById('campaign-detail-content');
         if (!modal || !content) return;
 
+        // Guarda o log de falhas em variável global para o botão de exportar CSV
+        // (não pode embutir JSON com aspas duplas dentro de atributos HTML onclick="...")
+        (window as any).__campaignFalhasLog = c.falhas_log || [];
+
         const progress = c.total_leads > 0 ? Math.round(((c.enviados + c.falhas) / c.total_leads) * 100) : 0;
 
         content.innerHTML = `
@@ -1190,14 +1194,7 @@ export const Campaigns = async () => {
                         Relatório de Falhas
                         <span style="background: rgba(239,68,68,0.15); color: #ef4444; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;">${c.falhas_log.length}</span>
                     </div>
-                    <button onclick="
-                        const rows = ${JSON.stringify(c.falhas_log)};
-                        const csv = 'Nome,Telefone,Motivo,Horário\\n' + rows.map(r => \`\"\${r.nome}\",\"\${r.telefone}\",\"\${r.motivo}\",\"\${new Date(r.ts).toLocaleString()}\"\`).join('\\n');
-                        const a = document.createElement('a');
-                        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-                        a.download = 'falhas_campanha.csv';
-                        a.click();
-                    " style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <button id="btn-export-falhas" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-download"></i> Exportar CSV
                     </button>
                 </div>
@@ -1232,6 +1229,18 @@ export const Campaigns = async () => {
             ` : '')}
         `;
         modal.classList.remove('hidden');
+
+        // Wira botão de exportar CSV após renderizar o innerHTML
+        document.getElementById('btn-export-falhas')?.addEventListener('click', () => {
+            const rows: any[] = (window as any).__campaignFalhasLog || [];
+            if (!rows.length) return;
+            const csv = 'Nome,Telefone,Motivo,Horário\n' +
+                rows.map(r => `"${r.nome}","${r.telefone}","${r.motivo}","${new Date(r.ts).toLocaleString()}"`).join('\n');
+            const a = document.createElement('a');
+            a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+            a.download = 'falhas_campanha.csv';
+            a.click();
+        });
     }
 };
 

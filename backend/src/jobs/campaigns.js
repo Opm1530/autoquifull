@@ -237,9 +237,12 @@ async function resolveInstanceName(db, instanciaId) {
 
 /**
  * Substitui variáveis {{nome}}, {{telefone}}, {{email}} etc. com dados do lead.
+ * Também normaliza quebras de linha (\r\n → \n) para evitar rejeição pela Evolution API.
  */
 function interpolate(msg, lead) {
   return msg
+    .replace(/\r\n/g, '\n')   // normaliza Windows line endings
+    .replace(/\r/g, '\n')      // normaliza Mac classic line endings
     .replace(/\{\{nome\}\}/gi, lead.nome || '')
     .replace(/\{\{telefone\}\}/gi, (lead.telefone || '').replace('@s.whatsapp.net', '').replace(/\D/g, ''))
     .replace(/\{\{email\}\}/gi, lead.email || '')

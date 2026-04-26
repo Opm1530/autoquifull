@@ -156,6 +156,15 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'get_order_status',
+      description:
+        'Consulta o status dos pedidos recentes do cliente. Use quando o cliente perguntar sobre o andamento do pedido, onde está a entrega, se o pedido foi confirmado, etc.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'transfer_to_human',
       description:
         'Transfere o atendimento para um atendente humano. Use quando o cliente pedir, houver reclamação ou você não conseguir resolver em 3 tentativas.',
@@ -247,7 +256,8 @@ EXEMPLOS DO QUE NUNCA FAZER:
 ✗ "Vou buscar o cardápio agora! 🍽️" → chame get_catalog e mostre o cardápio direto
 ✗ "Um momento, vou finalizar seu pedido! 😊" → chame confirm_order e informe o resultado
 ✗ "Deixa eu verificar o carrinho..." → chame view_cart e mostre o carrinho direto
-✗ "Vou registrar seu endereço!" → chame set_delivery_info e confirme o registro${returningCustomerSection}`;
+✗ "Vou registrar seu endereço!" → chame set_delivery_info e confirme o registro
+✗ "Não tenho pedido no carrinho" quando o cliente pergunta status → chame get_order_status, o carrinho fica vazio após o pedido ser criado mas o pedido existe no sistema${returningCustomerSection}`;
 
   if (customPrompt?.trim()) {
     return `${base}\n\nINSTRUÇÕES ADICIONAIS DO ESTABELECIMENTO:\n${customPrompt}`;
@@ -457,6 +467,65 @@ async function executeTool(toolName, args, context) {
       context.delivery = null;
 
       return result;
+    }
+
+    // ── Status de pedidos ─────────────────────────────────────
+    case 'get_order_status': {
+      const db = getDb();
+
+      const STATUS_LABELS = {
+        em_montagem:          'Aguardando confirmação do estabelecimento',
+        aguardando_pagamento: 'Aguardando pagamento (PIX/link)',
+        em_preparo:           'Confirmado — em preparo',
+        pedido_pronto:        'Pronto para retirada',
+        saiu_para_entrega:    'Saiu para entrega',
+        finalizado:           'Entregue / Finalizado',
+        cancelado:            'Cancelado',
+      };
+
+      // Busca pedidos recentes desse cliente nessa empresa
+      let snap;
+      try {
+        snap = await db
+          .collection('pedidos')
+          .where('empresaId', '==', companyId)
+          .where('clientPhone', '==', phone)
+          .orderBy('criadoEm', 'desc')
+          .limit(3)
+          .get();
+      } catch {
+        // Índice composto pode ainda não existir — fallback sem orderBy
+        snap = await db
+          .collection('pedidos')
+          .where('empresaId', '==', companyId)
+          .where('clientPhone', '==', phone)
+          .limit(5)
+          .get();
+      }
+
+      if (snap.empty) {
+        return { found: false, message: 'Nenhum pedido encontrado para este número.' };
+      }
+
+      const orders = snap.docs.map(doc => {
+        const d = doc.data();
+        const status = d.status || 'em_montagem';
+        const itens = (d.itens || d.items || []).map(i => `${i.quantidade || i.qty || 1}x ${i.item || i.name}`).join(', ');
+        return {
+          numeroPedido: d.numeroPedido,
+          status,
+          statusLabel: STATUS_LABELS[status] || status,
+          itens,
+          total: d.value || d.total || 0,
+          entrega: d.entrega || 'entrega',
+          endereco: d.endereco || '',
+          pagamento: d.formaPagamento || d.pagamento || '',
+          criadoEm: d.criadoEm?.toDate?.().toLocaleString('pt-BR') || '',
+        };
+      });
+
+      log.tool('Venda', `${phone} get_order_status → ${orders.length} pedido(s) encontrado(s)`);
+      return { found: true, orders };
     }
 
     // ── Transferir para humano ────────────────────────────────

@@ -233,6 +233,9 @@ export const Orders = async () => {
                         <button class="action-btn view" title="Ver detalhes" data-id="${order.id}">
                             <i style="color:#fff;" class="fa-solid fa-eye"></i>
                         </button>
+                        <button class="action-btn delete-order-btn" title="Excluir pedido" data-id="${order.id}" style="background:#ef444422;border-color:#ef444444;">
+                            <i style="color:#ef4444;" class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>`;
@@ -401,6 +404,33 @@ export const Orders = async () => {
                 if (order) showOrderModal(order);
             });
         });
+
+        document.querySelectorAll('.delete-order-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const orderId = (btn as HTMLElement).dataset.id!;
+                const order = orders.find(o => o.id === orderId);
+                if (order) await deleteOrder(order);
+            });
+        });
+    }
+
+    async function deleteOrder(order: any) {
+        const clientName = getLeadName(order.leadId, order.nome || order.leadName);
+        const tag = order.id.slice(-6).toUpperCase();
+        const ok = await confirm.danger('Excluir Pedido', `Excluir o pedido #${tag} de ${clientName}? Esta ação não pode ser desfeita.`);
+        if (!ok) return;
+        try {
+            await dbService.delete('pedidos', order.id);
+            orders = orders.filter(o => o.id !== order.id);
+            document.getElementById('order-detail-modal')?.classList.add('hidden');
+            const tbody = document.getElementById('orders-tbody');
+            if (tbody) tbody.innerHTML = renderRows(filterOrders(activeFilter));
+            attachViewListeners();
+            toast.success(`Pedido #${tag} excluído.`);
+        } catch {
+            toast.error('Erro ao excluir pedido.');
+        }
     }
 
     // ─── Modal ───────────────────────────────────────────────────────────────
@@ -555,6 +585,9 @@ export const Orders = async () => {
                                 <i class="fa-solid fa-box-archive" style="color:#fbbf24;"></i> Arquivar Pedido
                             </button>
                             ` : ''}
+                            <button class="lead-dropdown-item danger" data-menu-action="excluir">
+                                <i class="fa-solid fa-trash"></i> Excluir Pedido
+                            </button>
                         </div>
                     </div>` : ''}
                     <button class="action-btn" id="close-order-modal" title="Fechar">
@@ -820,6 +853,8 @@ export const Orders = async () => {
                     await handleHumanSupport(order);
                 } else if (action === 'arquivar') {
                     await handleManualArchive(order, modal);
+                } else if (action === 'excluir') {
+                    await deleteOrder(order);
                 }
             });
         });

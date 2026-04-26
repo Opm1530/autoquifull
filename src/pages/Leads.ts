@@ -97,6 +97,9 @@ export const Leads = async () => {
                         <button class="action-btn view" title="Ver detalhes" data-id="${lead.id}">
                             <i style="color:#fff;" class="fa-solid fa-eye"></i>
                         </button>
+                        <button class="action-btn delete-lead-btn" title="Excluir lead e histórico" data-id="${lead.id}" data-phone="${(lead.telefone || '').split('@')[0]}" data-nome="${lead.nome || lead.telefone || ''}" style="background:#ef444422;border-color:#ef444444;">
+                            <i style="color:#ef4444;" class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>`;
@@ -240,6 +243,15 @@ export const Leads = async () => {
                 const leadId = (btn as HTMLElement).dataset.id!;
                 const lead = leads.find(l => l.id === leadId);
                 if (lead) showLeadModal(lead);
+            });
+        });
+
+        document.querySelectorAll('.delete-lead-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const leadId = (btn as HTMLElement).dataset.id!;
+                const lead = leads.find(l => l.id === leadId);
+                if (lead) await deleteLead(lead);
             });
         });
     }
@@ -503,6 +515,9 @@ export const Leads = async () => {
             items.push({ label: 'Bloquear Lead', icon: '<i class="fa-solid fa-lock"></i>', action: 'bloquear', danger: true });
         }
 
+        items.push({ label: 'Resetar Conversa', icon: '<i class="fa-solid fa-rotate-left"></i>', action: 'resetar_conversa', danger: true });
+        items.push({ label: 'Excluir Lead', icon: '<i class="fa-solid fa-trash"></i>', action: 'excluir_lead', danger: true });
+
         return items;
     }
 
@@ -545,6 +560,49 @@ export const Leads = async () => {
             } catch {
                 toast.error('Erro ao desbloquear lead.');
             }
+        }
+
+        if (action === 'resetar_conversa') {
+            const ok = await confirm.danger('Resetar Conversa', `Apagar todo o histórico de conversa de ${lead.nome || lead.telefone}? A IA começará do zero na próxima mensagem.`);
+            if (!ok) return;
+            try {
+                const user = authService.getCurrentUser() as any;
+                const phone = (lead.telefone || '').split('@')[0];
+                const convId = `${user.companyId}_${phone}`;
+                await dbService.delete('conversations', convId);
+                toast.success('Histórico apagado! O próximo atendimento começa do zero.');
+                document.getElementById('lead-detail-modal')?.classList.add('hidden');
+            } catch {
+                toast.error('Erro ao resetar conversa.');
+            }
+        }
+
+        if (action === 'excluir_lead') {
+            await deleteLead(lead);
+        }
+    }
+
+    async function deleteLead(lead: any) {
+        const ok = await confirm.danger('Excluir Lead', `Excluir ${lead.nome || lead.telefone} e todo o histórico? Esta ação não pode ser desfeita.`);
+        if (!ok) return;
+        try {
+            const user = authService.getCurrentUser() as any;
+            const phone = (lead.telefone || '').split('@')[0];
+            const convId = `${user.companyId}_${phone}`;
+            // Apaga lead + histórico de conversa em paralelo
+            await Promise.all([
+                dbService.delete('leads', lead.id),
+                dbService.delete('conversations', convId).catch(() => {}),
+            ]);
+            leads = leads.filter((l: any) => l.id !== lead.id);
+            document.getElementById('lead-detail-modal')?.classList.add('hidden');
+            // Re-renderiza tabela
+            const tbody = document.getElementById('leads-tbody');
+            if (tbody) tbody.innerHTML = renderTable(filterLeads(activeFilter));
+            attachViewListeners();
+            toast.success(`Lead ${lead.nome || lead.telefone} excluído.`);
+        } catch {
+            toast.error('Erro ao excluir lead.');
         }
     }
 

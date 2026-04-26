@@ -180,11 +180,58 @@ const TOOLS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
+// Helpers de horário
+// ─────────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+
+/**
+ * Retorna true se a loja está fechada agora com base nos horários configurados.
+ * Espelha a mesma lógica de getClosedMessage() no webhook.
+ */
+function checkStoreClosed(lojaConfig) {
+  if (!lojaConfig?.horarios) return false; // sem config = sempre aberto
+
+  const now = new Date();
+  const dayKey = DAY_NAMES[now.getDay()];
+  const dayConfig = lojaConfig.horarios[dayKey];
+
+  if (!dayConfig || dayConfig.active === false) return true;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const [openH, openM] = (dayConfig.open || dayConfig.abertura || '09:00').split(':').map(Number);
+  const [closeH, closeM] = (dayConfig.close || dayConfig.fechamento || '18:00').split(':').map(Number);
+
+  return nowMinutes < openH * 60 + openM || nowMinutes >= closeH * 60 + closeM;
+}
+
+/**
+ * Retorna true se entrega está disponível agora.
+ * Usa horarios_entrega (campo salvo pela página de Configuração).
+ * Se não houver config de entrega, assume disponível.
+ */
+function checkDeliveryAvailable(lojaConfig) {
+  if (!lojaConfig?.horarios_entrega) return true; // sem config = disponível
+
+  const now = new Date();
+  const dayKey = DAY_NAMES[now.getDay()];
+  const dayConfig = lojaConfig.horarios_entrega[dayKey];
+
+  if (!dayConfig || dayConfig.active === false) return false;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const [openH, openM] = (dayConfig.open || '00:00').split(':').map(Number);
+  const [closeH, closeM] = (dayConfig.close || '23:59').split(':').map(Number);
+
+  return nowMinutes >= openH * 60 + openM && nowMinutes < closeH * 60 + closeM;
+}
+
+// ─────────────────────────────────────────────────────────────
 // System Prompt
 // ─────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(context) {
-  const { customPrompt, companyName, phone, hasMercadoPago, deliveryEnabled, minOrder, leadName, leadLastAddress } = context;
+  const { customPrompt, companyName, phone, hasMercadoPago, deliveryEnabled, minOrder, leadName, leadLastAddress, storeClosed } = context;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('pt-BR', {
@@ -206,7 +253,11 @@ function buildSystemPrompt(context) {
 
   const deliveryInfo = deliveryEnabled
     ? `Entrega e retirada disponíveis.${minOrder ? ` Pedido mínimo para entrega: R$ ${minOrder}.` : ''}`
-    : 'Apenas retirada no local disponível.';
+    : 'Apenas retirada no local disponível. NÃO ofereça nem aceite pedidos de entrega — informe ao cliente que a entrega não está disponível no momento.';
+
+  const storeStatusInfo = storeClosed
+    ? '\n⚠️ ATENÇÃO: A loja está FECHADA no momento. Você pode responder dúvidas gerais, mas NÃO deve registrar itens no carrinho nem finalizar pedidos.'
+    : '';
 
   // Seção de cliente recorrente — só aparece se tiver dados salvos
   const returningCustomerSection = (leadName || leadLastAddress)
@@ -219,7 +270,7 @@ Ao coletar dados de entrega, USE esses dados sem perguntar de novo. Apenas confi
   const base = `Você é um atendente virtual de vendas para ${companyName || 'nosso estabelecimento'}.
 
 DATA E HORA ATUAL: ${dateStr}, ${timeStr}
-TELEFONE DO CLIENTE: ${phone}
+TELEFONE DO CLIENTE: ${phone}${storeStatusInfo}
 
 FORMAS DE PAGAMENTO DISPONÍVEIS:
 ${paymentOptions}
@@ -363,6 +414,12 @@ async function executeTool(toolName, args, context) {
     case 'set_delivery_info': {
       const { delivery_type, client_name, address } = args;
 
+      // Bloqueia entrega se não está disponível agora (horarios_entrega)
+      if (delivery_type === 'entrega' && !context.deliveryEnabled) {
+        log.warn('Venda', `${phone} set_delivery_info → entrega bloqueada (fora do horário de entrega)`);
+        return { success: false, error: 'Entrega não está disponível no momento. Informe ao cliente que só é possível retirada no local agora.' };
+      }
+
       if (delivery_type === 'entrega' && !address) {
         return { success: false, error: 'Endereço de entrega é obrigatório.' };
       }
@@ -374,6 +431,18 @@ async function executeTool(toolName, args, context) {
     // ── Finalizar pedido ──────────────────────────────────────
     case 'confirm_order': {
       const { payment_method } = args;
+
+      // Bloqueia se a loja está fechada no momento
+      if (checkStoreClosed(context.lojaConfig)) {
+        log.warn('Venda', `${phone} confirm_order → bloqueado, loja fechada`);
+        return { success: false, error: 'Não é possível criar pedidos agora — a loja está fechada. Informe o horário de funcionamento ao cliente e peça que retorne quando abrir.' };
+      }
+
+      // Bloqueia se entrega foi escolhida mas não está disponível agora
+      if (context.delivery?.type === 'entrega' && !checkDeliveryAvailable(context.lojaConfig)) {
+        log.warn('Venda', `${phone} confirm_order → bloqueado, entrega fora do horário`);
+        return { success: false, error: 'Entrega não está disponível neste horário. Ofereça a opção de retirada no local ou peça ao cliente que solicite a entrega no horário disponível.' };
+      }
 
       if (context.cart.length === 0) {
         log.warn('Venda', `${phone} confirm_order → carrinho vazio, bloqueando`);
@@ -591,9 +660,10 @@ export async function processVendaMessage(params) {
   const leadName = existingLead?.nome && existingLead.nome !== 'Cliente' ? existingLead.nome : '';
   const leadLastAddress = existingLead?.ultimoEndereco || '';
 
-  // Flags de configuração da loja
+  // Flags de configuração da loja (verificação real de horários)
   const hasMercadoPago = !!(company?.mercadoPagoToken);
-  const deliveryEnabled = lojaConfig?.entrega_habilitada !== false;
+  const storeClosed    = checkStoreClosed(lojaConfig);
+  const deliveryEnabled = checkDeliveryAvailable(lojaConfig);
   const minOrder = lojaConfig?.pedido_minimo || 0;
 
   log.ai('Venda', `${phone} — ${catalog.length} produto(s) | MP: ${hasMercadoPago ? 'sim' : 'não'} | entrega: ${deliveryEnabled ? 'sim' : 'não'} | carrinho atual: ${(Array.isArray(initialCart) ? initialCart : []).length} item(s)${leadName ? ` | cliente recorrente: ${leadName}` : ''}`);
@@ -605,6 +675,9 @@ export async function processVendaMessage(params) {
     phone,
     catalog,
     company,
+    lojaConfig,
+    storeClosed,
+    deliveryEnabled,
     cart: Array.isArray(initialCart) ? [...initialCart] : [],
     delivery: initialDelivery || null,
     _transferredToHuman: false,
@@ -618,6 +691,7 @@ export async function processVendaMessage(params) {
     phone,
     hasMercadoPago,
     deliveryEnabled,
+    storeClosed,
     minOrder,
     leadName,
     leadLastAddress,

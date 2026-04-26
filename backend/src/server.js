@@ -13,6 +13,7 @@ import { validateEnv, ENV } from './config/env.js';
 import { initFirebase } from './config/firebase.js';
 import app from './app.js';
 import { startReminderJob } from './jobs/reminders.js';
+import { startCampaignJob } from './jobs/campaigns.js';
 
 async function bootstrap() {
   try {
@@ -34,6 +35,7 @@ async function bootstrap() {
 
     // 4. Inicia os jobs (crons)
     startReminderJob();
+    startCampaignJob();
 
     // Graceful shutdown
     process.on('SIGTERM', () => {

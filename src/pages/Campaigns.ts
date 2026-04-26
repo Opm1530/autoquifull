@@ -1107,7 +1107,10 @@ export const Campaigns = async () => {
                 </div>
                 <div>
                     <h3 style="margin: 0;">${c.nome || 'Detalhes da Campanha'}</h3>
-                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Iniciada em ${new Date(c.data_inicio.seconds * 1000).toLocaleString()}</p>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                        ${c.data_inicio ? `Iniciada em ${new Date(c.data_inicio.seconds * 1000).toLocaleString()}` : (c.data_agendamento ? `Agendada para ${new Date(c.data_agendamento.seconds * 1000).toLocaleString()}` : 'Aguardando disparo...')}
+                        ${c.data_fim ? ` • Finalizada em ${new Date(c.data_fim.seconds * 1000).toLocaleString()}` : ''}
+                    </p>
                 </div>
             </div>
 

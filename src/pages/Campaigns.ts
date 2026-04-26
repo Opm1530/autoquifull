@@ -1181,12 +1181,17 @@ export const Campaigns = async () => {
                     `).join('')}
             </div>
 
-            ${(c.falhas > 0 && !c.falhas_log) ? `
+            ${(() => {
+                const logSalvo = Array.isArray(c.falhas_log);  // campo existe no Firestore
+                const temFalhas = (c.falhas || 0) > 0;
+                if (!logSalvo && temFalhas) return `
             <div style="display: flex; align-items: flex-start; gap: 10px; padding: 1rem 1.25rem; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.25); border-radius: 10px; margin-top: 1.5rem; color: #f59e0b; font-size: 0.88rem; line-height: 1.5;">
                 <i class="fa-solid fa-circle-info" style="margin-top: 2px; flex-shrink: 0;"></i>
                 <span>Esta campanha registrou <strong>${c.falhas} falha(s)</strong>, mas foi processada antes do relatório de erros ser ativado. Novas campanhas terão o detalhamento completo dos erros.</span>
-            </div>
-            ` : (c.falhas_log?.length > 0) ? `
+            </div>`;
+                return '';
+            })()}
+            ${(c.falhas_log?.length > 0) ? `
             <div class="card" style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.25); padding: 1.5rem; margin-top: 1.5rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 600;">
@@ -1221,12 +1226,12 @@ export const Campaigns = async () => {
                     </table>
                 </div>
             </div>
-            ` : (c.status === 'finalizada' ? `
+            ` : (c.status === 'finalizada' && (c.falhas || 0) === 0) ? `
             <div style="display: flex; align-items: center; gap: 10px; padding: 1rem 1.25rem; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; margin-top: 1.5rem; color: #22c55e; font-size: 0.9rem;">
                 <i class="fa-solid fa-circle-check"></i>
                 <span>Todos os envios foram concluídos sem falhas.</span>
             </div>
-            ` : '')}
+            ` : ''}
         `;
         modal.classList.remove('hidden');
 

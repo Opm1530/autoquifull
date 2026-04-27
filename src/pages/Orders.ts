@@ -28,9 +28,9 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }
     em_montagem: { label: 'Em Montagem', cls: 'badge warning', icon: '<i class="fa-solid fa-cart-shopping"></i>' },
     aguardando_pagamento: { label: 'Aguard. Pagamento', cls: 'badge info', icon: '<i class="fa-solid fa-credit-card"></i>' },
     em_preparo: { label: 'Em Preparo', cls: 'badge primary', icon: '<i class="fa-solid fa-utensils"></i>' },
-    pedido_pronto: { label: 'Pronto p/ Retirada', cls: 'badge success', icon: '<i class="fa-solid fa-box" style="color:#fff;"></i>' },
-    saiu_para_entrega: { label: 'Saiu p/ Entrega', cls: 'badge success', icon: '<i class="fa-solid fa-truck" style="color:#fff;"></i>' },
-    finalizado: { label: 'Finalizado', cls: 'badge success', icon: '<i class="fa-solid fa-check" style="color:#fff;"></i>' },
+    pedido_pronto: { label: 'Pronto p/ Retirada', cls: 'badge success', icon: '<i class="fa-solid fa-box"></i>' },
+    saiu_para_entrega: { label: 'Saiu p/ Entrega', cls: 'badge success', icon: '<i class="fa-solid fa-truck"></i>' },
+    finalizado: { label: 'Finalizado', cls: 'badge success', icon: '<i class="fa-solid fa-check"></i>' },
     cancelado: { label: 'Cancelado', cls: 'badge danger', icon: '<i class="fa-solid fa-xmark"></i>' },
 };
 
@@ -705,7 +705,7 @@ export const Orders = async () => {
                         <h4 class="lead-section-title"><i class="fa-solid fa-comment-dots" style="color:#a78bfa;"></i> Enviar Mensagem ao Cliente</h4>
                         <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem;">Esta mensagem será enviada diretamente ao cliente sem alterar o status do pedido ou o atendimento.</p>
                         <textarea id="intervir-text" placeholder="Digite sua mensagem..." rows="3"
-                            style="width:100%;background:var(--surface-hover);border:1px solid rgba(139,92,246,0.4);border-radius:8px;color:white;padding:0.75rem;font-size:0.9rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+                            style="width:100%;background:var(--surface-hover);border:1px solid rgba(139,92,246,0.4);border-radius:8px;color:var(--text-main);padding:0.75rem;font-size:0.9rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
                         <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
                             <button id="btn-intervir-send" class="btn-lead-action" style="background:rgba(139,92,246,0.2);border-color:rgba(139,92,246,0.5);color:#a78bfa;flex:1;">
                                 <i class="fa-solid fa-paper-plane"></i> Enviar Mensagem
@@ -723,7 +723,7 @@ export const Orders = async () => {
                     <div class="lead-section">
                         <h4 class="lead-section-title" style="color:var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Motivo do Cancelamento <span style="color:#ff4d4d">*</span></h4>
                         <textarea id="cancel-reason" placeholder="Informe o motivo para o cliente..." rows="3"
-                            style="width:100%;background:rgba(239,68,68,0.05);border:1px solid var(--danger);border-radius:8px;color:white;padding:0.75rem;font-size:0.9rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+                            style="width:100%;background:rgba(239,68,68,0.05);border:1px solid var(--danger);border-radius:8px;color:var(--text-main);padding:0.75rem;font-size:0.9rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
                     </div>
                 </div>
             </div>

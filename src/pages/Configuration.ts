@@ -291,7 +291,7 @@ export const Configuration = async () => {
                 align-items: center;
                 justify-content: space-between;
                 padding: 0.75rem 1rem;
-                background: rgba(255,255,255,0.02);
+                background: var(--surface-hover);
                 border: 1px solid var(--border-color);
                 border-radius: var(--radius-md);
                 transition: 0.2s;
@@ -304,7 +304,7 @@ export const Configuration = async () => {
             .time-input {
                 background: var(--bg-color);
                 border: 1px solid var(--border-color);
-                color: white;
+                color: var(--text-main);
                 padding: 0.4rem 0.6rem;
                 border-radius: 6px;
                 font-size: 0.85rem;

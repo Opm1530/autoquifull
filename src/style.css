@@ -242,6 +242,11 @@ ul {
   background: rgba(99, 102, 241, 0.1);
 }
 
+.stats-icon.danger {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .stats-info .label {
   font-size: 0.875rem;
   color: var(--text-muted);
@@ -319,6 +324,9 @@ ul {
 .data-table tr:hover td {
   background: var(--surface-hover);
 }
+
+/* Ícones dentro de badges herdam a cor do badge */
+.badge i { color: inherit; }
 
 /* Badges Styles */
 .badge.warning {
@@ -658,6 +666,23 @@ ul {
 }
 :root[data-theme="light"] .logout-btn span i {
   color: var(--text-muted) !important;
+}
+/* Ícones de botões de ação: cor automática no tema claro.
+   Botões sem background inline (maioria da tabela) ficam com ícone escuro.
+   Botões com background colorido explícito (inline style) mantêm color:white herdado do botão. */
+:root[data-theme="light"] .action-btn {
+  background: var(--surface-color);
+  color: var(--text-muted);
+}
+:root[data-theme="light"] .action-btn:not([style*="background"]) i {
+  color: var(--text-muted) !important;
+}
+:root[data-theme="light"] .action-btn:not([style*="background"]):hover {
+  background: var(--surface-hover);
+  color: var(--text-main);
+}
+:root[data-theme="light"] .action-btn:not([style*="background"]):hover i {
+  color: var(--text-main) !important;
 }
 
 /* Login Page */

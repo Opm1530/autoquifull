@@ -969,7 +969,7 @@ export const Products = async () => {
             .field label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 6px; display: block; }
             .field input {
                 width: 100%; background: var(--bg-color);
-                border: 1px solid var(--border-color); color: white;
+                border: 1px solid var(--border-color); color: var(--text-main);
                 padding: 10px 12px; border-radius: 8px; font-size: 0.95rem;
             }
             .field input:focus { border-color: var(--primary); outline: none; }
@@ -995,8 +995,8 @@ export const Products = async () => {
             }
             @keyframes spin { to { transform: rotate(360deg); } }
 
-            .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); padding: 0.75rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; border: 1px solid var(--border-color); }
-            .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+            .btn-secondary { background: var(--surface-hover); color: var(--text-main); padding: 0.75rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; border: 1px solid var(--border-color); }
+            .btn-secondary:hover { background: var(--surface-light); }
 
             .multi-select-grid {
                 display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1062,10 +1062,10 @@ export const Products = async () => {
             @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
             .bulk-select-cat {
-                background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-                color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; outline: none;
+                background: var(--surface-hover); border: 1px solid var(--border-color);
+                color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; outline: none;
             }
-            .bulk-select-cat option { background: var(--surface); color: white; }
+            .bulk-select-cat option { background: var(--surface-color); color: var(--text-main); }
         </style>
 
         <div class="page-container">

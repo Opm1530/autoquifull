@@ -204,14 +204,14 @@ export const Dashboard = async () => {
         <div class="dashboard-grid">
             ${user.role === 'admin' ? `
                 <div class="stats-card card" style="border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.02);">
-                    <div class="stats-icon success"><i style="color: #ffffff8f;" class="fa-solid fa-coins"></i></div>
+                    <div class="stats-icon success"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-coins"></i></div>
                     <div class="stats-info">
                         <span class="label">Créditos OpenAI</span><br>
                         <span class="value" style="color:var(--success);">$ ${metrics.openai.credits.toFixed(2)}</span>
                     </div>
                 </div>
                 <div class="stats-card card" style="border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.02);">
-                    <div class="stats-icon danger"><i style="color: #ffffff8f;" class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="stats-icon danger"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="stats-info">
                         <span class="label">Gasto OpenAI (Mês)</span><br>
                         <span class="value" style="color:var(--danger);">$ ${metrics.openai.usage.toFixed(2)}</span>
@@ -220,7 +220,7 @@ export const Dashboard = async () => {
             ` : ''}
             ${(modulos.includes('venda') || modulos.includes('agendamento')) ? `
             <div class="stats-card card">
-                <div class="stats-icon primary"><i style="color: #ffffff8f;" class="fa-solid fa-message"></i></div>
+                <div class="stats-icon primary"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-message"></i></div>
                 <div class="stats-info">
                     <span class="label">Mensagens pela IA</span><br>
                     <span class="value">${metrics.messages}</span>
@@ -228,21 +228,21 @@ export const Dashboard = async () => {
             </div>` : ''}
             ${modulos.includes('venda') || modulos.includes('catalogo') ? `
             <div class="stats-card card">
-                <div class="stats-icon success"><i style="color: #ffffff8f;" class="fa-solid fa-money-bill"></i></div>
+                <div class="stats-icon success"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-money-bill"></i></div>
                 <div class="stats-info">
                     <span class="label">Total em Vendas</span><br>
                     <span class="value">R\$ ${metrics.payments.toFixed(2)}</span>
                 </div>
             </div>
             <div class="stats-card card">
-                <div class="stats-icon warning"><i style="color: #ffffff8f;" class="fa-solid fa-hourglass-half"></i></div>
+                <div class="stats-icon warning"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-hourglass-half"></i></div>
                 <div class="stats-info">
                     <span class="label">Pedidos Pendentes</span><br>
                     <span class="value">${metrics.orders_pending}</span>
                 </div>
             </div>
             <div class="stats-card card">
-                <div class="stats-icon info"><i style="color: #ffffff8f;" class="fa-solid fa-box"></i></div>
+                <div class="stats-icon info"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-box"></i></div>
                 <div class="stats-info">
                     <span class="label">Pedidos Hoje</span><br>
                     <span class="value">${(metrics as any).today || 0}</span>
@@ -250,7 +250,7 @@ export const Dashboard = async () => {
             </div>
             ${catalogMetrics ? `
             <div class="stats-card card">
-                <div class="stats-icon primary"><i style="color: #ffffff8f;" class="fa-solid fa-receipt"></i></div>
+                <div class="stats-icon primary"><i style="color: currentColor; opacity: 0.85;" class="fa-solid fa-receipt"></i></div>
                 <div class="stats-info">
                     <span class="label">Ticket Médio</span><br>
                     <span class="value">R\$ ${catalogMetrics.avgTicket.toFixed(2)}</span>

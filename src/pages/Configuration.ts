@@ -41,6 +41,26 @@ const VARIAVEIS = [
 
 // ─── Message event fields ─────────────────────────────────────────────────────
 const MSG_FIELDS = [
+    // ── Agendamentos ──────────────────────────────────────────
+    {
+        key: 'agendamento_confirmado',
+        label: 'Agendamento Confirmado',
+        icon: 'fa-calendar-check',
+        default: '✅ Olá {{nome_lead}}! Seu agendamento foi confirmado com sucesso!\n\n📋 *Detalhes:*\n🔸 Serviço: {{servico}}\n📅 Data: {{data}}\n⏰ Horário: {{horario}}\n💰 Valor: R$ {{valor}}\n\nQualquer dúvida, é só chamar! 😊',
+    },
+    {
+        key: 'agendamento_cancelado',
+        label: 'Agendamento Cancelado',
+        icon: 'fa-calendar-xmark',
+        default: '❌ Olá {{nome_lead}}! Seu agendamento de {{servico}} no dia {{data}} às {{horario}} foi cancelado.\n\nSe quiser remarcar, é só falar comigo! 😊',
+    },
+    {
+        key: 'agendamento_lembrete',
+        label: 'Lembrete de Agendamento',
+        icon: 'fa-bell',
+        default: '⏰ Olá {{nome_lead}}! Lembrete: você tem um agendamento amanhã!\n\n🔸 Serviço: {{servico}}\n📅 Data: {{data}}\n⏰ Horário: {{horario}}\n\nTe esperamos! 🙌',
+    },
+    // ── Pedidos ───────────────────────────────────────────────
     {
         key: 'pedido_aceito_entrega_pago',
         label: 'Pedido aceito (Entrega pagamento adiantado)',

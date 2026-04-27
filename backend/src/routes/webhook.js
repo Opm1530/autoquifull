@@ -237,6 +237,52 @@ async function handleMessage(companyId, storeId, instanceName, phone, userMessag
       responseMessages = result.messages;
       stage = result.stage;
       transferredToHuman = result.transferredToHuman;
+
+      // ── Mensagem automática de confirmação de agendamento ──
+      if (stage === 'agendado' && result.bookingDetails) {
+        const bd = result.bookingDetails;
+        const tplKey = 'agendamento_confirmado';
+        const defaultTpl = '✅ *Agendamento Confirmado!*\n\n🔸 Serviço: {{servico}}\n📅 Data: {{data}}\n⏰ Horário: {{horario}}\n💰 Valor: R$ {{valor}}';
+        const tpl = config?.mensagens_automaticas?.[tplKey] || defaultTpl;
+
+        const dataFormatada = new Date(bd.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+          timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+        });
+
+        const confirmMsg = tpl
+          .replace(/\{\{nome_lead\}\}/g, bd.clientName || '')
+          .replace(/\{\{servico\}\}/g, bd.serviceName || '')
+          .replace(/\{\{data\}\}/g, dataFormatada)
+          .replace(/\{\{horario\}\}/g, bd.time || '')
+          .replace(/\{\{valor\}\}/g, bd.servicePrice > 0
+            ? (bd.servicePrice).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : 'a combinar');
+
+        // Adiciona a mensagem de confirmação estruturada APÓS a resposta da IA
+        responseMessages.push(confirmMsg);
+        log.ok('Handler', `${phone} — mensagem automática de confirmação adicionada`);
+      }
+
+      // ── Mensagem automática de cancelamento ───────────────
+      if (stage === 'cancelado' && result.cancelDetails) {
+        const cd = result.cancelDetails;
+        const tplKey = 'agendamento_cancelado';
+        const defaultTpl = '❌ *Agendamento Cancelado*\n\n🔸 Serviço: {{servico}}\n📅 Data: {{data}}\n⏰ Horário: {{horario}}\n\nQualquer dúvida, é só chamar! 😊';
+        const tpl = config?.mensagens_automaticas?.[tplKey] || defaultTpl;
+
+        const dataFormatada = cd.date ? new Date(cd.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+          timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+        }) : '';
+
+        const cancelMsg = tpl
+          .replace(/\{\{nome_lead\}\}/g, cd.clientName || '')
+          .replace(/\{\{servico\}\}/g, cd.serviceName || '')
+          .replace(/\{\{data\}\}/g, dataFormatada)
+          .replace(/\{\{horario\}\}/g, cd.time || '');
+
+        responseMessages.push(cancelMsg);
+        log.ok('Handler', `${phone} — mensagem automática de cancelamento adicionada`);
+      }
     }
 
     // Salva o histórico da conversa

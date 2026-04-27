@@ -26,14 +26,14 @@ export const Topbar = (title: string) => {
  */
 export function initTheme() {
     // Aplica tema salvo no localStorage
-    const saved = localStorage.getItem('aq-theme') || 'dark';
+    const saved = localStorage.getItem('aq-theme') || 'light';
     applyTheme(saved);
 
     // Wira o botão quando ele aparecer no DOM
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
         btn.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
             const next = current === 'dark' ? 'light' : 'dark';
             applyTheme(next);
             localStorage.setItem('aq-theme', next);
@@ -45,6 +45,7 @@ function applyTheme(theme: string) {
     document.documentElement.setAttribute('data-theme', theme);
     const icon = document.getElementById('theme-icon');
     if (icon) {
-        icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        // Sol = modo claro ativo (clique vai para dark) | Lua = modo escuro ativo (clique vai para light)
+        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
 }

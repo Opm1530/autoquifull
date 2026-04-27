@@ -76,17 +76,37 @@ async function sendReminderForAppointment(agendamento) {
   // Formata a data para exibição
   const dateDisplay = formatDateDisplay(date);
   const firstName = (clientName || 'Cliente').split(' ')[0];
-
-  // Verifica se é amanhã ou hoje
   const isToday = date === getTodayStr();
   const isTomorrow = date === getTomorrowStr();
   const dayWord = isToday ? 'hoje' : isTomorrow ? 'amanhã' : `em ${dateDisplay}`;
 
-  const message =
-    `Olá, ${firstName}! 😊\n\n` +
-    `Lembrando que você tem *${serviceName}* agendado ${dayWord}, ` +
-    `*${dateDisplay}* às *${time}*.\n\n` +
-    `Caso precise remarcar ou cancelar, é só falar comigo aqui! 📅`;
+  // Tenta usar o template configurado no loja_config
+  let message;
+  try {
+    const db = getDb();
+    const snap = await db.collection('loja_config')
+      .where('empresaId', '==', companyId)
+      .limit(1).get();
+    const lojaConfig = snap.empty ? null : snap.docs[0].data();
+    const tpl = lojaConfig?.mensagens_automaticas?.agendamento_lembrete;
+
+    if (tpl) {
+      message = tpl
+        .replace(/\{\{nome_lead\}\}/g, clientName || 'Cliente')
+        .replace(/\{\{servico\}\}/g, serviceName || '')
+        .replace(/\{\{data\}\}/g, `${dayWord}, ${dateDisplay}`)
+        .replace(/\{\{horario\}\}/g, time || '');
+    }
+  } catch { /* usa fallback abaixo */ }
+
+  // Fallback padrão
+  if (!message) {
+    message =
+      `Olá, ${firstName}! 😊\n\n` +
+      `Lembrando que você tem *${serviceName}* agendado ${dayWord}, ` +
+      `*${dateDisplay}* às *${time}*.\n\n` +
+      `Caso precise remarcar ou cancelar, é só falar comigo aqui! 📅`;
+  }
 
   await sendText(instanceName, clientPhone, message);
 }

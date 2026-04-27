@@ -2,13 +2,16 @@ export const LandingPage = () => {
     return `
     <style>
         :root {
-            --lp-bg: #030712;
+            --lp-bg: #f8fafc;
+            --lp-bg-alt: #f0f4f8;
             --lp-primary: #6366f1;
             --lp-secondary: #a855f7;
-            --lp-text: #f9fafb;
-            --lp-text-dim: #9ca3af;
-            --lp-glass: rgba(255, 255, 255, 0.03);
-            --lp-border: rgba(255, 255, 255, 0.08);
+            --lp-text: #111827;
+            --lp-text-dim: #6b7280;
+            --lp-glass: rgba(255, 255, 255, 0.85);
+            --lp-border: rgba(0, 0, 0, 0.09);
+            --lp-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --lp-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
 
         .lp-container {
@@ -21,31 +24,32 @@ export const LandingPage = () => {
             line-height: 1.6;
         }
 
-        /* ── Glowing Background ── */
+        /* ── Subtle Background Orbs ── */
         .lp-glow {
             position: fixed;
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
-            filter: blur(100px);
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.07) 0%, transparent 70%);
+            filter: blur(80px);
             z-index: 0;
             pointer-events: none;
         }
-        .lp-glow-1 { top: -300px; right: -300px; }
-        .lp-glow-2 { bottom: -300px; left: -300px; }
+        .lp-glow-1 { top: -200px; right: -200px; }
+        .lp-glow-2 { bottom: -200px; left: -200px; background: radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 70%); }
 
         /* ── Navbar ── */
         .lp-navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.5rem 10%;
+            padding: 1.25rem 10%;
             position: sticky;
             top: 0;
-            background: rgba(3, 7, 18, 0.85);
+            background: rgba(248, 250, 252, 0.92);
             backdrop-filter: blur(16px);
             z-index: 100;
             border-bottom: 1px solid var(--lp-border);
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
         }
         .lp-logo {
             display: flex;
@@ -108,7 +112,7 @@ export const LandingPage = () => {
             border: 1px solid rgba(99, 102, 241, 0.2);
             border-radius: 99px;
             font-size: 0.85rem;
-            color: #818cf8;
+            color: var(--lp-primary);
             margin-bottom: 2.5rem;
             backdrop-filter: blur(4px);
             letter-spacing: 0.5px;
@@ -164,11 +168,11 @@ export const LandingPage = () => {
             transition: all 0.3s;
             backdrop-filter: blur(4px);
         }
-        .lp-btn-secondary:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); }
+        .lp-btn-secondary:hover { background: rgba(0,0,0,0.04); border-color: rgba(99,102,241,0.3); transform: translateY(-3px); }
 
         /* ── Feature Sections ── */
         .lp-section { padding: 120px 10%; position: relative; z-index: 1; }
-        .lp-section.alt { background: rgba(255,255,255,0.015); }
+        .lp-section.alt { background: var(--lp-bg-alt); }
         
         .lp-grid-2 {
             display: grid;
@@ -189,11 +193,11 @@ export const LandingPage = () => {
         .lp-feat-item i { color: var(--lp-primary); margin-top: 5px; font-size: 0.9rem; }
 
         .lp-feat-image {
-            background: var(--lp-glass);
+            background: #ffffff;
             border: 1px solid var(--lp-border);
             border-radius: 32px;
             padding: 2.5rem;
-            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 60px -10px rgba(0,0,0,0.12);
         }
         .lp-feat-image img { width: 100%; height: auto; border-radius: 16px; display: block; }
 
@@ -216,8 +220,9 @@ export const LandingPage = () => {
             border-radius: 32px;
             transition: all 0.4s;
             backdrop-filter: blur(8px);
+            box-shadow: var(--lp-shadow);
         }
-        .lp-card:hover { transform: translateY(-12px); border-color: var(--lp-primary); background: rgba(99, 102, 241, 0.05); }
+        .lp-card:hover { transform: translateY(-12px); border-color: var(--lp-primary); background: rgba(99, 102, 241, 0.04); box-shadow: var(--lp-shadow-lg); }
         .lp-card-icon {
             width: 70px;
             height: 70px;
@@ -254,8 +259,9 @@ export const LandingPage = () => {
             backdrop-filter: blur(8px);
             position: relative;
             overflow: hidden;
+            box-shadow: var(--lp-shadow);
         }
-        .lp-pricing-card:hover { transform: translateY(-8px); box-shadow: 0 30px 80px rgba(0,0,0,0.3); }
+        .lp-pricing-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(0,0,0,0.12); }
         .lp-pricing-card.popular {
             border-color: var(--lp-primary);
             background: rgba(99, 102, 241, 0.06);
@@ -313,7 +319,7 @@ export const LandingPage = () => {
         }
         .lp-pricing-cta:hover { transform: translateY(-2px); filter: brightness(1.1); }
         .lp-pricing-skeleton {
-            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
             border-radius: 12px;
@@ -332,8 +338,9 @@ export const LandingPage = () => {
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: var(--lp-shadow);
         }
-        .lp-faq-item:hover { border-color: rgba(99,102,241,0.3); background: rgba(255,255,255,0.05); }
+        .lp-faq-item:hover { border-color: rgba(99,102,241,0.3); background: var(--lp-bg-alt); }
         .lp-faq-question { padding: 1.8rem; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.15rem; }
         .lp-faq-answer { padding: 0 1.8rem 1.8rem; color: var(--lp-text-dim); line-height: 1.8; display: none; font-size: 1.05rem; }
         .lp-faq-item.active .lp-faq-answer { display: block; }
@@ -342,6 +349,7 @@ export const LandingPage = () => {
         /* ── Footer ── */
         .lp-footer {
             padding: 120px 10% 60px;
+            background: var(--lp-bg-alt);
             border-top: 1px solid var(--lp-border);
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr;
@@ -353,7 +361,7 @@ export const LandingPage = () => {
         .lp-footer-col ul { list-style: none; padding: 0; }
         .lp-footer-col li { margin-bottom: 1rem; }
         .lp-footer-col a { color: var(--lp-text-dim); text-decoration: none; transition: color 0.3s; font-size: 1rem; }
-        .lp-footer-col a:hover { color: white; }
+        .lp-footer-col a:hover { color: var(--lp-primary); }
 
         /* ── Floating WhatsApp ── */
         .lp-wa-float {

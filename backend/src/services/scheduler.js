@@ -36,55 +36,52 @@ import { log } from '../utils/logger.js';
  * @param {number} duration - Duração do serviço em minutos
  * @returns {string[]} Array de horários disponíveis no formato HH:MM
  */
-export async function getAvailableSlots(companyId, storeId, date, duration = 60) {
+/**
+ * Retorna informações de disponibilidade completas para um dia:
+ * { slots, storeClosed, openTime, closeTime, fullyBooked }
+ */
+export async function getAvailabilityInfo(companyId, storeId, date, duration = 60) {
   const config = await getLojaConfig(companyId, storeId);
   const horarios = config?.horarios || null;
 
-  // Determina o range de funcionamento
   const { openTime, closeTime, isOpen } = getDayHours(horarios, date);
 
   if (!isOpen) {
     log.info('Scheduler', `${date} — loja fechada (${companyId})`);
-    return [];
+    return { slots: [], storeClosed: true, openTime, closeTime };
   }
 
-  // Busca agendamentos existentes para o dia
   const existingAppts = await getAgendamentosForDate(companyId, storeId, date);
-
-  // Gera todos os slots possíveis (intervalos de 30 minutos)
   const allSlots = generateSlots(openTime, closeTime, 30);
 
-  // Filtra slots que conflitam com agendamentos existentes
-  const available = allSlots.filter((slot) => {
+  const slots = allSlots.filter((slot) => {
     const slotStart = timeToMinutes(slot);
     const slotEnd = slotStart + duration;
 
-    // Verifica conflito com cada agendamento existente
     for (const appt of existingAppts) {
       const apptStart = timeToMinutes(appt.time);
       const apptEnd = apptStart + (appt.duration || 60);
-      const buffer = 10; // minutos de buffer entre atendimentos
-
-      // Há conflito se os períodos se sobrepõem
-      if (slotStart < apptEnd + buffer && slotEnd > apptStart - buffer) {
-        return false;
-      }
+      const buffer = 10;
+      if (slotStart < apptEnd + buffer && slotEnd > apptStart - buffer) return false;
     }
 
-    // Verifica se o serviço termina antes do fechamento
     if (slotEnd > timeToMinutes(closeTime)) return false;
 
-    // Não permite horários no passado para o dia de hoje
     if (date === getTodayStr()) {
       const nowMinutes = getNowMinutes();
-      if (slotStart <= nowMinutes + 30) return false; // 30 min de margem mínima
+      if (slotStart <= nowMinutes + 30) return false;
     }
 
     return true;
   });
 
-  log.info('Scheduler', `${date} — ${available.length}/${allSlots.length} slots disponíveis (${existingAppts.length} agendamento(s) existente(s), duração ${duration}min)`);
-  return available;
+  log.info('Scheduler', `${date} — ${slots.length}/${allSlots.length} slots disponíveis (${existingAppts.length} agendamento(s), duração ${duration}min)`);
+  return { slots, storeClosed: false, openTime, closeTime, fullyBooked: slots.length === 0 };
+}
+
+export async function getAvailableSlots(companyId, storeId, date, duration = 60) {
+  const info = await getAvailabilityInfo(companyId, storeId, date, duration);
+  return info.slots;
 }
 
 /**

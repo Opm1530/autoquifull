@@ -27,7 +27,7 @@
 import { OpenAI } from 'openai';
 import { ENV } from '../config/env.js';
 import { getServices, getAgendamentosByPhone, getClienteByPhone } from './firestore.js';
-import { getAvailableSlots, bookAppointment, cancelBooking } from './scheduler.js';
+import { getAvailableSlots, getAvailabilityInfo, bookAppointment, cancelBooking } from './scheduler.js';
 import { setHumanMode } from './conversation.js';
 import {
   getTrinksServices,
@@ -244,12 +244,15 @@ ANTI-PADRÕES PROIBIDOS:
   ❌ Pedir o nome ANTES de verificar disponibilidade
   ❌ Dizer que tem ou não tem agendamentos sem chamar get_client_info
   ❌ "Estou com instabilidade" — se houver erro, tente novamente ou informe de forma natural
+  ❌ Inventar um service_id — sempre chame get_services para obter os IDs reais
 
 REGRAS GERAIS:
 - Converta datas informais: "amanhã", "sexta-feira", "20/04" → YYYY-MM-DD
 - Horários informais: "às 3 da tarde" → 15:00, "14h" → 14:00
 - Nunca confirme agendamento sem resultado positivo de book_appointment
-- Se um dia não tiver vagas, as sugestões alternativas já vêm na resposta da ferramenta — use-as
+- Quando check_availability retornar store_closed=true: explique que a loja não funciona nesse dia e use o campo "reason" + "suggestions" para oferecer alternativas
+- Quando check_availability retornar suggestions: apresente-as de forma natural ("Tenho vagas no dia X às Y, Y ou Y. Algum desses te serve?")
+- Só agende serviços que existem em get_services — nunca invente um serviço que o cliente pediu se ele não estiver na lista
 ${profRule}`;
 
   return customPrompt?.trim()
@@ -266,41 +269,82 @@ async function executeLocalTool(toolName, args, context) {
 
   switch (toolName) {
     case 'get_services': {
-      if (!services.length) return { services: [], message: 'Nenhum serviço cadastrado.' };
+      if (!services.length) {
+        return {
+          services: [],
+          message: 'Nenhum serviço cadastrado no sistema ainda. Informe ao cliente que os serviços estão sendo configurados e ofereça transferir para um atendente humano.',
+        };
+      }
       return {
         services: services.map((s) => ({
-          id: s.id, name: s.name, price: s.price,
-          duration_minutes: s.duration, description: s.description,
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          duration_minutes: s.duration,
+          description: s.description || '',
         })),
       };
     }
 
     case 'check_availability': {
       const { date, service_id } = args;
-      const svc = services.find((s) => s.id === service_id);
+
+      // Resolve o serviço: por ID ou por nome (case-insensitive)
+      let svc = services.find((s) => s.id === service_id);
+      if (!svc && service_id) {
+        // Tenta match por nome
+        svc = services.find((s) => s.name.toLowerCase().includes(service_id.toLowerCase())
+          || service_id.toLowerCase().includes(s.name.toLowerCase()));
+      }
       const duration = svc?.duration || 60;
-      const slots = await getAvailableSlots(companyId, storeId, date, duration);
-      if (!slots.length) {
-        // Tenta sugerir o próximo dia útil disponível (até 7 dias)
+
+      const info = await getAvailabilityInfo(companyId, storeId, date, duration);
+
+      if (!info.slots.length) {
+        const DAY_NAMES_PT = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+        const d = new Date(date + 'T12:00:00');
+        const dayNamePt = DAY_NAMES_PT[d.getDay()];
+
+        // Razão clara para a IA explicar ao cliente
+        const reason = info.storeClosed
+          ? `A loja não funciona às ${dayNamePt}s.`
+          : `Todos os horários do dia ${date} estão ocupados.`;
+
+        // Busca próximos dias com vagas (até 14 dias pra frente)
         const suggestions = [];
-        for (let i = 1; i <= 7 && suggestions.length < 3; i++) {
+        for (let i = 1; i <= 14 && suggestions.length < 3; i++) {
           const nextDate = new Date(date + 'T12:00:00');
           nextDate.setDate(nextDate.getDate() + i);
           const nextDateStr = nextDate.toISOString().slice(0, 10);
-          const nextSlots = await getAvailableSlots(companyId, storeId, nextDateStr, duration);
-          if (nextSlots.length > 0) {
-            suggestions.push({ date: nextDateStr, slots: nextSlots.slice(0, 5) });
+          const nextInfo = await getAvailabilityInfo(companyId, storeId, nextDateStr, duration);
+          if (nextInfo.slots.length > 0) {
+            suggestions.push({
+              date: nextDateStr,
+              date_formatted: formatDate(nextDateStr),
+              slots: nextInfo.slots.slice(0, 6),
+            });
           }
         }
+
         return {
           date,
+          date_formatted: formatDate(date),
           available: false,
           slots: [],
-          message: 'Nenhum horário disponível nesta data.',
+          store_closed: info.storeClosed,
+          reason,
           suggestions,
         };
       }
-      return { date, available: true, slots };
+
+      return {
+        date,
+        date_formatted: formatDate(date),
+        available: true,
+        open_time: info.openTime,
+        close_time: info.closeTime,
+        slots: info.slots,
+      };
     }
 
     case 'get_client_info': {
@@ -337,8 +381,33 @@ async function executeLocalTool(toolName, args, context) {
 
     case 'book_appointment': {
       const { client_name, service_id, service_name, service_price, service_duration, date, time, notes } = args;
-      const svc = services.find((s) => s.id === service_id);
-      const dur = service_duration || svc?.duration || 60;
+
+      // Resolve serviço: por ID exato, depois por nome
+      let svc = services.find((s) => s.id === service_id);
+      if (!svc && service_id) {
+        svc = services.find((s) => s.name.toLowerCase().includes(service_id.toLowerCase())
+          || service_id.toLowerCase().includes(s.name.toLowerCase()));
+      }
+      if (!svc && service_name) {
+        svc = services.find((s) => s.name.toLowerCase().includes(service_name.toLowerCase())
+          || service_name.toLowerCase().includes(s.name.toLowerCase()));
+      }
+
+      // Se há serviços cadastrados mas nenhum bate, rejeita
+      if (services.length > 0 && !svc) {
+        const serviceList = services.map((s) => `"${s.name}"`).join(', ');
+        return {
+          success: false,
+          error: `Serviço não encontrado. Serviços disponíveis: ${serviceList}. Peça ao cliente para escolher um desses.`,
+        };
+      }
+
+      // Usa SEMPRE os dados do Firestore quando o serviço for encontrado
+      // (nunca confia no que a IA passou para preço/duração)
+      const resolvedServiceId = svc?.id || service_id;
+      const resolvedServiceName = svc?.name || service_name;
+      const resolvedPrice = svc?.price ?? service_price ?? 0;
+      const dur = svc?.duration || service_duration || 60;
 
       // Valida disponibilidade antes de criar
       const slots = await getAvailableSlots(companyId, storeId, date, dur);
@@ -351,28 +420,60 @@ async function executeLocalTool(toolName, args, context) {
 
       const result = await bookAppointment(companyId, storeId, {
         clientPhone: phone, clientName: client_name,
-        serviceId: service_id, serviceName: service_name,
-        servicePrice: service_price || svc?.price || 0,
+        serviceId: resolvedServiceId, serviceName: resolvedServiceName,
+        servicePrice: resolvedPrice,
         date, time, duration: dur, notes: notes || '',
       });
+
+      // Salva detalhes no contexto para o webhook enviar mensagem automática
+      context._bookingDetails = {
+        appointmentId: result.agendamento.id,
+        clientName: client_name,
+        serviceName: resolvedServiceName,
+        servicePrice: resolvedPrice,
+        date,
+        time,
+        duration: dur,
+      };
 
       return {
         success: true,
         appointment_id: result.agendamento.id,
         summary: {
           client: client_name,
-          service: service_name,
+          service: resolvedServiceName,
           date: formatDate(date),
           time,
-          price: formatPrice(result.agendamento.servicePrice),
-          instruction: 'Agendamento criado com sucesso. Confirme de forma calorosa e natural para o cliente.',
+          price: resolvedPrice > 0 ? formatPrice(resolvedPrice) : null,
+          instruction: 'Agendamento criado com sucesso. Confirme de forma calorosa e natural para o cliente. Inclua o valor do serviço na confirmação se price não for null.',
         },
       };
     }
 
     case 'cancel_appointment': {
       const { appointment_id, trinks_id } = args;
+
+      // Busca dados do agendamento antes de cancelar (para a mensagem automática)
+      let apptData = null;
+      try {
+        const { getDb } = await import('../config/firebase.js');
+        const db = getDb();
+        const doc = await db.collection('agendamentos').doc(appointment_id).get();
+        if (doc.exists) apptData = doc.data();
+      } catch { /* não crítico */ }
+
       await cancelBooking(companyId, appointment_id, trinks_id || null);
+
+      // Salva detalhes no contexto para o webhook enviar mensagem automática
+      context._cancelDetails = {
+        appointmentId: appointment_id,
+        clientName: apptData?.clientName || null,
+        serviceName: apptData?.serviceName || null,
+        date: apptData?.date || null,
+        time: apptData?.time || null,
+      };
+      context._stage = 'cancelado';
+
       return { success: true, appointment_id };
     }
 
@@ -435,18 +536,41 @@ async function executeTrinksTool(toolName, args, context) {
       );
 
       if (result.byProfessional) {
-        // Modo escolha de profissional — retorna por profissional
         const available = result.professionals?.length > 0;
         return {
-          date, available,
+          date,
+          date_formatted: formatDate(date),
+          available,
           professionals: (result.professionals || []).map((p) => ({
             id: String(p.id), name: p.name, slots: p.slots,
           })),
         };
       } else {
-        // Modo sem escolha — retorna slots unificados
         const slots = result.slots || [];
-        return { date, available: slots.length > 0, slots };
+        if (!slots.length) {
+          // Sugere próximos dias via Trinks (até 7 dias à frente)
+          const suggestions = [];
+          for (let i = 1; i <= 14 && suggestions.length < 3; i++) {
+            const nextDate = new Date(date + 'T12:00:00');
+            nextDate.setDate(nextDate.getDate() + i);
+            const nextDateStr = nextDate.toISOString().slice(0, 10);
+            try {
+              const nextResult = await getTrinksAvailability(trinks, nextDateStr, service_id ? Number(service_id) : null, professional_id ? Number(professional_id) : null);
+              const nextSlots = nextResult.slots || [];
+              if (nextSlots.length > 0) {
+                suggestions.push({ date: nextDateStr, date_formatted: formatDate(nextDateStr), slots: nextSlots.slice(0, 6) });
+              }
+            } catch { break; }
+          }
+          return {
+            date,
+            date_formatted: formatDate(date),
+            available: false,
+            slots: [],
+            suggestions,
+          };
+        }
+        return { date, date_formatted: formatDate(date), available: true, slots };
       }
     }
 
@@ -719,10 +843,17 @@ export async function processAgendamentoMessage(params) {
   const parts = splitMessages(finalText);
   tAgent.end('Agendamento', `${phone} — agente concluído | ${parts.length} msg(s) | ${turns} turno(s) | stage: ${stage}`);
 
+  // O cancelamento pode sobrescrever o stage (vem do executor)
+  if (context._stage === 'cancelado' && stage !== 'humano') {
+    stage = 'cancelado';
+  }
+
   return {
     messages: parts,
     stage,
     transferredToHuman: context._transferredToHuman,
+    bookingDetails: context._bookingDetails || null,
+    cancelDetails: context._cancelDetails || null,
   };
 }
 

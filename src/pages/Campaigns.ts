@@ -123,12 +123,12 @@ export const Campaigns = async () => {
                     </td>
                     <td>
                         <div style="display: flex; gap: 6px;">
-                            <button class="action-btn view-details" data-id="${c.id}" title="Ver detalhes" style="background: var(--primary); border-radius: 8px; width: 32px; height: 32px; flex-shrink: 0;">
-                                <i class="fa-solid fa-eye" style="color:#fff;"></i>
+                            <button class="action-btn view-details" data-id="${c.id}" title="Ver detalhes" style="background: var(--primary); color: white; border-radius: 8px; width: 32px; height: 32px; flex-shrink: 0;">
+                                <i class="fa-solid fa-eye"></i>
                             </button>
                             ${['processando', 'em_andamento', 'agendada'].includes(c.status) ? `
-                            <button class="action-btn cancel-campaign" data-id="${c.id}" title="Cancelar campanha" style="background: var(--danger); border-radius: 8px; width: 32px; height: 32px; flex-shrink: 0;">
-                                <i class="fa-solid fa-ban" style="color:#fff;"></i>
+                            <button class="action-btn cancel-campaign" data-id="${c.id}" title="Cancelar campanha" style="background: var(--danger); color: white; border-radius: 8px; width: 32px; height: 32px; flex-shrink: 0;">
+                                <i class="fa-solid fa-ban"></i>
                             </button>
                             ` : ''}
                         </div>

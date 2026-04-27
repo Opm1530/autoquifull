@@ -76,16 +76,16 @@ export const Instances = async () => {
                 <td>
                     <div class="actions">
                         ${inst.status === 'desconectado' ?
-                `<button class="action-btn" onclick="window.connectInstance('${inst.nome}')" title="Conectar"><i style="color: #FFF;" class="fa-solid fa-qrcode"></i></button>` :
+                `<button class="action-btn" onclick="window.connectInstance('${inst.nome}')" title="Conectar"><i class="fa-solid fa-qrcode"></i></button>` :
                 ''
             }
-                        <button class="action-btn" onclick="window.shareQR('${inst.nome}')" title="Compartilhar Link QR" style="background-color: #6366f1; border-color: #6366f1;"><i style="color: #FFF;" class="fa-solid fa-share-nodes"></i></button>
-                        <button class="action-btn" onclick="window.editInstance('${inst.id}', '${inst.funcao || ''}', '${inst.lojaId || ''}')" title="Configurar" style="background-color: #0ea5e9; border-color: #0ea5e9;"><i style="color: #FFF;" class="fa-solid fa-sliders"></i></button>
+                        <button class="action-btn" onclick="window.shareQR('${inst.nome}')" title="Compartilhar Link QR" style="background-color: #6366f1; border-color: #6366f1; color: white;"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="action-btn" onclick="window.editInstance('${inst.id}', '${inst.funcao || ''}', '${inst.lojaId || ''}')" title="Configurar" style="background-color: #0ea5e9; border-color: #0ea5e9; color: white;"><i class="fa-solid fa-sliders"></i></button>
                         ${inst.status === 'conectado' ?
-                `<button class="action-btn" onclick="window.logoutInstance('${inst.id}', '${inst.nome}')" title="Desconectar" style="background-color: var(--warning); border-color: var(--warning);"><i style="color: #FFF;" class="fa-solid fa-right-from-bracket"></i></button>` :
+                `<button class="action-btn" onclick="window.logoutInstance('${inst.id}', '${inst.nome}')" title="Desconectar" style="background-color: var(--warning); border-color: var(--warning); color: white;"><i class="fa-solid fa-right-from-bracket"></i></button>` :
                 ''
             }
-                        <button class="action-btn" onclick="window.deleteInstance('${inst.id}', '${inst.nome}')" title="Excluir"><i style="color: #FFF;" class="fa-solid fa-trash"></i></button>
+                        <button class="action-btn" onclick="window.deleteInstance('${inst.id}', '${inst.nome}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>
             </tr>

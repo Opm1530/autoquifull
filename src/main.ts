@@ -3,6 +3,22 @@ import { AdminSidebar } from './components/AdminSidebar';
 import { OwnerSidebar } from './components/OwnerSidebar';
 import { EmployeeSidebar } from './components/EmployeeSidebar';
 import { Topbar, initTheme } from './components/Topbar';
+
+/** Inicializa o menu lateral recolhível */
+function initSidebar() {
+  const sidebar = document.getElementById('main-sidebar');
+  const toggle  = document.getElementById('sidebar-toggle');
+  if (!sidebar || !toggle) return;
+
+  // Restaura estado salvo
+  const collapsed = localStorage.getItem('aq-sidebar') === 'collapsed';
+  if (collapsed) sidebar.classList.add('collapsed');
+
+  toggle.addEventListener('click', () => {
+    const isNowCollapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem('aq-sidebar', isNowCollapsed ? 'collapsed' : 'expanded');
+  });
+}
 import { Dashboard } from './pages/Dashboard';
 import { Orders } from './pages/Orders';
 import { Products } from './pages/Products';
@@ -194,8 +210,11 @@ class App {
             </div>
         `;
 
-    // Inicializa tema e botão de toggle após o Topbar estar no DOM
-    setTimeout(() => initTheme(), 0);
+    // Inicializa tema e sidebar após o DOM estar pronto
+    setTimeout(() => {
+      initTheme();
+      initSidebar();
+    }, 0);
 
     try {
         const content = await this.getPageContent(path);

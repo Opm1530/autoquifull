@@ -1,9 +1,7 @@
 export const Topbar = (title: string) => {
     return `
         <div class="topbar glass">
-            <div class="topbar-left">
-                <h2 class="page-title">${title}</h2>
-            </div>
+            <h2 class="page-title">${title}</h2>
             <div class="topbar-right">
                 <div class="search-bar">
                     <span class="icon"><i class="fa-solid fa-magnifying-glass"></i></span>
@@ -13,7 +11,7 @@ export const Topbar = (title: string) => {
                     <i class="fa-solid fa-moon" id="theme-icon"></i>
                 </button>
                 <button id="logout-btn" class="logout-btn" title="Sair">
-                    <span class="icon"><i style="color: #FFF; font-size: 1.0rem;" class="fa-solid fa-arrow-right-from-bracket"></i></span>
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
             </div>
         </div>
@@ -25,11 +23,9 @@ export const Topbar = (title: string) => {
  * Deve ser chamado uma vez após o Topbar ser inserido no DOM.
  */
 export function initTheme() {
-    // Aplica tema salvo no localStorage
     const saved = localStorage.getItem('aq-theme') || 'light';
     applyTheme(saved);
 
-    // Wira o botão quando ele aparecer no DOM
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
         btn.addEventListener('click', () => {
@@ -45,7 +41,6 @@ function applyTheme(theme: string) {
     document.documentElement.setAttribute('data-theme', theme);
     const icon = document.getElementById('theme-icon');
     if (icon) {
-        // Sol = modo claro ativo (clique vai para dark) | Lua = modo escuro ativo (clique vai para light)
         icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
 }

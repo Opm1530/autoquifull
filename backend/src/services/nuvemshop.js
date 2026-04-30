@@ -69,8 +69,9 @@ export async function getStoreInfo(storeId, accessToken) {
 
 const WEBHOOK_EVENTS = [
   'orders/created',
+  'orders/updated',
   'orders/paid',
-  'orders/packaged',
+  'orders/packed',
   'orders/fulfilled',
   'orders/cancelled',
 ];

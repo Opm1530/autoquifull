@@ -472,9 +472,14 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
         <strong>${integration.storeName || 'Loja NuvemShop'}</strong>
         <span>ID: ${integration.storeId} ${integration.storeUrl ? `· ${integration.storeUrl}` : ''}</span>
       </div>
-      <button class="ec-btn ec-btn-danger" id="ec-btn-disconnect" style="flex-shrink:0;">
-        <i class="fa-solid fa-link-slash"></i> Desconectar
-      </button>
+      <div style="display:flex;gap:.5rem;flex-shrink:0;">
+        <button class="ec-btn ec-btn-secondary" id="ec-btn-reregister" title="Re-registrar webhooks na NuvemShop">
+          <i class="fa-solid fa-rotate"></i> Webhooks
+        </button>
+        <button class="ec-btn ec-btn-danger" id="ec-btn-disconnect">
+          <i class="fa-solid fa-link-slash"></i> Desconectar
+        </button>
+      </div>
     </div>
 
     <!-- Tabs -->
@@ -492,6 +497,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   `;
 
   document.getElementById('ec-btn-disconnect')?.addEventListener('click', () => disconnectStore(companyId));
+  document.getElementById('ec-btn-reregister')?.addEventListener('click', () => reregisterWebhooks(companyId));
 
   (window as any).ecSwitchTab = (tab: string) => {
     document.querySelectorAll('.ec-tab').forEach((el) => el.classList.remove('active'));
@@ -510,6 +516,30 @@ async function disconnectStore(companyId: string) {
   if (!confirm('Tem certeza que deseja desconectar a loja? Os webhooks serão removidos.')) return;
   await fetch(`/ecommerce/integration/${companyId}`, { method: 'DELETE' });
   loadEcommercePage(companyId);
+}
+
+async function reregisterWebhooks(companyId: string) {
+  const btn = document.getElementById('ec-btn-reregister') as HTMLButtonElement;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Registrando...`;
+
+  try {
+    const res = await fetch(`/ecommerce/integration/${companyId}/reregister-webhooks`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      const ok    = data.webhooks.filter((w: any) => w.status !== 'error').length;
+      const total = data.webhooks.length;
+      alert(`Webhooks registrados: ${ok}/${total}\n\n${data.webhooks.map((w: any) => `${w.event}: ${w.status}`).join('\n')}`);
+    } else {
+      alert('Erro: ' + (data.error || 'Falha ao registrar webhooks'));
+    }
+  } catch {
+    alert('Erro de comunicação com o servidor.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<i class="fa-solid fa-rotate"></i> Webhooks`;
 }
 
 // ─────────────────────────────────────────────────────────────

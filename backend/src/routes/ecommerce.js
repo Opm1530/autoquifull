@@ -296,6 +296,34 @@ router.post('/integration/:companyId', async (req, res) => {
   }
 });
 
+router.post('/integration/:companyId/reregister-webhooks', async (req, res) => {
+  const { companyId } = req.params;
+  try {
+    const integration = await getIntegration(companyId);
+    if (!integration) return res.status(404).json({ error: 'Integração não encontrada' });
+
+    // Remove os antigos
+    try { await removeWebhooks(integration.storeId, integration.accessToken, webhookUrl(companyId)); } catch { /* ignora */ }
+
+    // Registra novamente
+    const whUrl = webhookUrl(companyId);
+    const webhooks = await registerWebhooks(integration.storeId, integration.accessToken, whUrl);
+
+    const db = getDb();
+    await db.collection('ecommerce_integrations').doc(integration.id).update({
+      webhooksRegistered: webhooks.filter((w) => w.status !== 'error').length > 0,
+      webhooksDetail: webhooks,
+      updatedAt: new Date(),
+    });
+
+    log.ok('Ecommerce', `Webhooks re-registrados para empresa ${companyId}: ${JSON.stringify(webhooks)}`);
+    res.json({ ok: true, webhooks });
+  } catch (err) {
+    log.error('Ecommerce', `reregister-webhooks: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/integration/:companyId', async (req, res) => {
   const { companyId } = req.params;
   try {

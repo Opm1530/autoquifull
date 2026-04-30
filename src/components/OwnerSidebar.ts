@@ -58,6 +58,11 @@ export const OwnerSidebar = async () => {
                     <span class="nav-label">Campanhas</span>
                 </a>` : ''}
 
+                <a href="/ecommerce" class="nav-item" data-label="E-commerce">
+                    <span class="nav-icon"><i class="fa-solid fa-shop"></i></span>
+                    <span class="nav-label">E-commerce</span>
+                </a>
+
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Gestão</span>
 
@@ -152,6 +157,11 @@ export const OwnerSidebar = async () => {
                     <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
                     <span class="nav-label">Campanhas</span>
                 </a>` : ''}
+
+                <a href="/ecommerce" class="nav-item" data-label="E-commerce">
+                    <span class="nav-icon"><i class="fa-solid fa-shop"></i></span>
+                    <span class="nav-label">E-commerce</span>
+                </a>
 
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Configurações</span>

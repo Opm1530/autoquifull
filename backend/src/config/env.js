@@ -21,6 +21,11 @@ export const ENV = {
 
   // Lembretes
   REMINDER_HOURS_BEFORE: parseInt(process.env.REMINDER_HOURS_BEFORE || '24', 10),
+
+  // NuvemShop OAuth
+  NUVEMSHOP_APP_ID:     process.env.NUVEMSHOP_APP_ID     || '',
+  NUVEMSHOP_APP_SECRET: process.env.NUVEMSHOP_APP_SECRET || '',
+  BACKEND_URL:          process.env.BACKEND_URL           || 'http://localhost:3001',
 };
 
 export function validateEnv() {

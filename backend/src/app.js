@@ -13,6 +13,7 @@ import plansRouter from './routes/plans.js';
 import ordersRouter from './routes/orders.js';
 import adminRouter from './routes/admin.js';
 import mpConnectRouter from './routes/mp-connect.js';
+import ecommerceRouter from './routes/ecommerce.js';
 
 import { webhookLimiter, publicLimiter, apiLimiter } from './middlewares/rateLimit.js';
 
@@ -63,7 +64,8 @@ app.use('/plans',   publicLimiter,  plansRouter);
 // Rotas autenticadas — rate limit padrão
 app.use('/calendar', apiLimiter, calendarRouter);
 app.use('/admin',    apiLimiter, adminRouter);
-app.use('/mp',       apiLimiter, mpConnectRouter);
+app.use('/mp',        apiLimiter,    mpConnectRouter);
+app.use('/ecommerce', publicLimiter, ecommerceRouter); // webhook sem auth + API com apiLimiter interno
 
 // ── Frontend estático ─────────────────────────────────────────
 app.use(express.static(DIST_PATH));

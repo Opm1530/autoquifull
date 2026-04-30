@@ -41,6 +41,7 @@ import { Schedule } from './pages/Schedule';
 import { ScheduleClients } from './pages/ScheduleClients';
 import { Webhooks } from './pages/Webhooks';
 import { MercadoPago } from './pages/MercadoPago';
+import { Ecommerce, initEcommerce } from './pages/Ecommerce';
 
 import { Catalog } from './pages/Catalog';
 import { QRPage } from './pages/QRPage';
@@ -222,6 +223,8 @@ class App {
         if (pageContainer) {
             pageContainer.innerHTML = content;
         }
+        // Run page-specific init after DOM is set
+        if (path === '/ecommerce') initEcommerce();
     } catch (e) {
         console.error('Error loading page content:', e);
         const pageContainer = document.getElementById('page-content');
@@ -285,6 +288,7 @@ class App {
       case '/admin/migration': return 'Migração de Produtos';
       case '/mercado-pago': return 'Mercado Pago';
       case '/catalog-settings': return 'Configuração';
+      case '/ecommerce': return 'E-commerce';
       default: return 'Página não encontrada';
     }
   }
@@ -346,6 +350,8 @@ class App {
         return await MercadoPago();
       case '/catalog-settings':
         return await CatalogSettings();
+      case '/ecommerce':
+        return await Ecommerce();
       default:
         return `<h1>404</h1><p>Página não encontrada.</p>`;
     }

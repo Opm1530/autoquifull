@@ -22,6 +22,9 @@ const app = express();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_PATH = join(__dirname, '../../app/dist');
 
+// ── Trust proxy (nginx na frente) ────────────────────────────
+app.set('trust proxy', 1);
+
 // ── Segurança HTTP ────────────────────────────────────────────
 app.use(helmet({
   // Permite carregar o frontend Vite que usa scripts inline

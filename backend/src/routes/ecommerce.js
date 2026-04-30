@@ -453,8 +453,16 @@ router.post('/webhook/:companyId', async (req, res) => {
   res.status(200).json({ ok: true }); // Responde rápido para a NuvemShop
 
   const { companyId } = req.params;
-  const event = req.headers['x-linkedstore-event'] || req.headers['x-nuvemshop-event'] || req.headers['x-tiendanube-event'] || '';
+  const event = req.headers['x-linked-store-event']
+    || req.headers['x-tiendanube-event']
+    || req.headers['x-nuvemshop-event']
+    || req.headers['x-linkedstore-event']
+    || '';
   const payload = req.body;
+
+  if (!event) {
+    log.warn('Ecommerce', `Webhook sem event header — headers: ${Object.keys(req.headers).filter(h => h.startsWith('x-')).join(', ')}`);
+  }
 
   if (!payload || !payload.id) return;
 

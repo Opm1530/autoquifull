@@ -208,6 +208,9 @@ export async function upsertLead(companyId, storeId, phone, data = {}) {
   if (data.statusAtendimento)               base.statusAtendimento = data.statusAtendimento;
   if (data.statusLead)                      base.statusLead        = data.statusLead;
   if (data.ultimoEndereco !== undefined)    base.ultimoEndereco    = data.ultimoEndereco;
+  if (data.origem)                          base.origem            = data.origem;
+  if (data.ultimoPedido)                    base.ultimoPedido      = data.ultimoPedido;
+  if (data.lojaNuvem)                       base.lojaNuvem         = data.lojaNuvem;
 
   if (existing) {
     await db.collection('leads').doc(existing.id).update(base);

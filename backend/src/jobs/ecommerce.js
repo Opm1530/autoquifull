@@ -33,8 +33,8 @@ export function startEcommerceJobs() {
   // Carrinho abandonado — a cada 30 min
   cron.schedule('*/30 * * * *', () => runAbandonedCartJob().catch(logErr));
 
-  // Lembrete de boleto — a cada hora (minuto 5)
-  cron.schedule('5 * * * *', () => runBoletoReminderJob().catch(logErr));
+  // Lembrete de boleto/PIX — a cada 15 min (PIX expira em 1h)
+  cron.schedule('*/15 * * * *', () => runBoletoReminderJob().catch(logErr));
 
   // Reengajamento — todo dia às 09h
   cron.schedule('0 9 * * *', () => runReengagementJob().catch(logErr));

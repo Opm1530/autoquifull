@@ -22,6 +22,7 @@ import { getDb } from '../config/firebase.js';
 import { ENV } from '../config/env.js';
 import { log } from '../utils/logger.js';
 import { sendText } from '../services/evolution.js';
+import { upsertLead } from '../services/firestore.js';
 import {
   getStoreInfo,
   getOrder,
@@ -500,6 +501,17 @@ export async function processEcommerceEvent(companyId, event, payload) {
   const produtos  = extractProducts(order);
   const numPedido = String(order.number || orderId);
   const loja      = integration.storeName || 'nossa loja';
+
+  // Registra/atualiza o cliente como lead na plataforma
+  if (phone) {
+    upsertLead(companyId, null, phone, {
+      nome,
+      statusLead:  'cliente',
+      origem:      'ecommerce',
+      ultimoPedido: numPedido,
+      lojaNuvem:   loja,
+    }).catch((err) => log.warn('Ecommerce', `upsertLead falhou: ${err.message}`));
+  }
 
   // Mapping evento → trigger
   const eventTriggerMap = {

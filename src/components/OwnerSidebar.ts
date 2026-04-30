@@ -7,6 +7,7 @@ export const OwnerSidebar = async () => {
     let showAgendamento = false;
     let showDisparo = false;
     let showVendaCatalogo = false;
+    let showEcommerce = false;
 
     if (user && user.companyId) {
         try {
@@ -17,6 +18,7 @@ export const OwnerSidebar = async () => {
             if (modulos.includes('agendamento')) showAgendamento = true;
             if (modulos.includes('disparo')) showDisparo = true;
             if (modulos.includes('catalogo')) showVendaCatalogo = true;
+            if (modulos.includes('ecommerce')) showEcommerce = true;
         } catch (error) {
             console.error('Error fetching company for sidebar:', error);
         }
@@ -58,10 +60,11 @@ export const OwnerSidebar = async () => {
                     <span class="nav-label">Campanhas</span>
                 </a>` : ''}
 
+                ${showEcommerce ? `
                 <a href="/ecommerce" class="nav-item" data-label="E-commerce">
                     <span class="nav-icon"><i class="fa-solid fa-shop"></i></span>
                     <span class="nav-label">E-commerce</span>
-                </a>
+                </a>` : ''}
 
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Gestão</span>
@@ -158,10 +161,11 @@ export const OwnerSidebar = async () => {
                     <span class="nav-label">Campanhas</span>
                 </a>` : ''}
 
+                ${showEcommerce ? `
                 <a href="/ecommerce" class="nav-item" data-label="E-commerce">
                     <span class="nav-icon"><i class="fa-solid fa-shop"></i></span>
                     <span class="nav-label">E-commerce</span>
-                </a>
+                </a>` : ''}
 
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Configurações</span>

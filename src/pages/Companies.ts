@@ -33,6 +33,7 @@ export const Companies = async () => {
         { value: 'venda',       label: '🤖 IA de Venda' },
         { value: 'agendamento', label: '📅 IA de Agendamento' },
         { value: 'disparo',     label: '📣 Disparo em Massa' },
+        { value: 'ecommerce',   label: '🛒 E-commerce' },
     ];
 
     const renderRows = () => {

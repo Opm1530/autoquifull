@@ -453,7 +453,7 @@ router.post('/webhook/:companyId', async (req, res) => {
   res.status(200).json({ ok: true }); // Responde rápido para a NuvemShop
 
   const { companyId } = req.params;
-  const event = req.headers['x-linkedstore-event'] || req.headers['x-nuvemshop-event'] || '';
+  const event = req.headers['x-linkedstore-event'] || req.headers['x-nuvemshop-event'] || req.headers['x-tiendanube-event'] || '';
   const payload = req.body;
 
   if (!payload || !payload.id) return;
@@ -483,11 +483,12 @@ export async function processEcommerceEvent(companyId, event, payload) {
 
   // Mapping evento → trigger
   const eventTriggerMap = {
-    'orders/created':   'pedido_confirmado',
-    'orders/paid':      'pagamento_aprovado',
-    'orders/packaged':  null, // sem trigger configurado
-    'orders/fulfilled': 'pedido_enviado',
-    'orders/cancelled': null,
+    'order/created':   'pedido_confirmado',
+    'order/paid':      'pagamento_aprovado',
+    'order/packed':    null,
+    'order/fulfilled': 'pedido_enviado',
+    'order/updated':   null,
+    'order/cancelled': null,
   };
 
   const trigger = eventTriggerMap[event];

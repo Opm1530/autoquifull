@@ -24,6 +24,7 @@ import { log } from '../utils/logger.js';
 import { sendText } from '../services/evolution.js';
 import {
   getStoreInfo,
+  getOrder,
   registerWebhooks,
   removeWebhooks,
   extractPhone,
@@ -480,12 +481,25 @@ export async function processEcommerceEvent(companyId, event, payload) {
   if (!integration) return;
 
   const orderId = String(payload.id);
-  const phone   = extractPhone(payload);
-  const nome    = extractName(payload).split(' ')[0];
-  const total   = formatTotal(payload.total || payload.subtotal);
-  const produtos = extractProducts(payload);
-  const numPedido = String(payload.number || orderId);
-  const loja    = integration.storeName || 'nossa loja';
+
+  // NuvemShop envia payload resumido — busca o pedido completo na API
+  let order = payload;
+  const hasPhone = extractPhone(payload);
+  if (!hasPhone) {
+    log.info('Ecommerce', `Payload incompleto, buscando pedido ${orderId} na API...`);
+    const full = await getOrder(integration.storeId, integration.accessToken, orderId);
+    if (full) {
+      order = full;
+      log.info('Ecommerce', `Pedido ${orderId} carregado da API — cliente: ${extractName(full)}`);
+    }
+  }
+
+  const phone     = extractPhone(order);
+  const nome      = extractName(order).split(' ')[0];
+  const total     = formatTotal(order.total || order.subtotal);
+  const produtos  = extractProducts(order);
+  const numPedido = String(order.number || orderId);
+  const loja      = integration.storeName || 'nossa loja';
 
   // Mapping evento → trigger
   const eventTriggerMap = {
@@ -519,8 +533,7 @@ export async function processEcommerceEvent(companyId, event, payload) {
   let url_rastreio = '';
 
   if (trigger === 'pedido_enviado') {
-    const shipping = payload.shipping_tracking_number || payload.shipping?.number || '';
-    const carrier  = payload.shipping_carrier_name || '';
+    const shipping = order.shipping_tracking_number || order.shipping?.number || '';
     rastreio       = shipping;
     url_rastreio   = shipping
       ? `https://rastreamento.correios.com.br/app/index.php?objetos=${shipping}`

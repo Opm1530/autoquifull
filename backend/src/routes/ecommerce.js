@@ -483,37 +483,7 @@ export async function processEcommerceEvent(companyId, event, payload) {
 
   const orderId = String(payload.id);
 
-  // NuvemShop envia payload resumido — busca o pedido completo na API
-  let order = payload;
-  const hasPhone = extractPhone(payload);
-  if (!hasPhone) {
-    log.info('Ecommerce', `Payload incompleto, buscando pedido ${orderId} na API...`);
-    const full = await getOrder(integration.storeId, integration.accessToken, orderId);
-    if (full) {
-      order = full;
-      log.info('Ecommerce', `Pedido ${orderId} carregado da API — cliente: ${extractName(full)}`);
-    }
-  }
-
-  const phone     = extractPhone(order);
-  const nome      = extractName(order).split(' ')[0];
-  const total     = formatTotal(order.total || order.subtotal);
-  const produtos  = extractProducts(order);
-  const numPedido = String(order.number || orderId);
-  const loja      = integration.storeName || 'nossa loja';
-
-  // Registra/atualiza o cliente como lead na plataforma
-  if (phone) {
-    upsertLead(companyId, null, phone, {
-      nome,
-      statusLead:  'cliente',
-      origem:      'ecommerce',
-      ultimoPedido: numPedido,
-      lojaNuvem:   loja,
-    }).catch((err) => log.warn('Ecommerce', `upsertLead falhou: ${err.message}`));
-  }
-
-  // Mapping evento → trigger
+  // Mapping evento → trigger (verifica antes de buscar o pedido completo)
   const eventTriggerMap = {
     'order/created':   'pedido_confirmado',
     'order/paid':      'pagamento_aprovado',
@@ -524,7 +494,41 @@ export async function processEcommerceEvent(companyId, event, payload) {
   };
 
   const trigger = eventTriggerMap[event];
-  if (!trigger) return;
+  if (trigger === undefined) return; // evento desconhecido
+
+  // NuvemShop envia payload resumido — busca o pedido completo apenas para eventos com trigger
+  let order = payload;
+  if (trigger !== null) {
+    const hasPhone = extractPhone(payload);
+    if (!hasPhone) {
+      log.info('Ecommerce', `Buscando pedido ${orderId} na API...`);
+      const full = await getOrder(integration.storeId, integration.accessToken, orderId);
+      if (full) {
+        order = full;
+        log.info('Ecommerce', `Pedido ${orderId} carregado — cliente: ${extractName(full)}`);
+      }
+    }
+  }
+
+  const phone     = extractPhone(order);
+  const nome      = extractName(order).split(' ')[0];
+  const total     = formatTotal(order.total || order.subtotal);
+  const produtos  = extractProducts(order);
+  const numPedido = String(order.number || orderId);
+  const loja      = integration.storeName || 'nossa loja';
+
+  // Registra o cliente como lead (só em eventos de criação/pagamento)
+  if (phone && (event === 'order/created' || event === 'order/paid')) {
+    upsertLead(companyId, null, phone, {
+      nome,
+      statusLead:   'cliente',
+      origem:       'ecommerce',
+      ultimoPedido: numPedido,
+      lojaNuvem:    loja,
+    }).catch((err) => log.warn('Ecommerce', `upsertLead falhou: ${err.message}`));
+  }
+
+  if (!trigger) return; // evento mapeado mas sem automação (ex: order/updated)
 
   // Evita duplicatas
   if (await wasSentRecently(companyId, orderId, trigger)) {

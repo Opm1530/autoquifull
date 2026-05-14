@@ -60,7 +60,7 @@ const TRIGGERS = [
     badge: 'A cada hora',
     desc: 'Lembra o cliente de pagar o boleto ou PIX pendente após X horas.',
     vars: ['{{nome}}', '{{numero_pedido}}', '{{total}}', '{{tipo_pagamento}}', '{{chave_pix}}', '{{link_pagamento}}', '{{loja}}'],
-    defaultDelay: 20,
+    defaultDelay: 10,
     defaultMsg:
       'Oi, {{nome}}! 📄\n\nNotamos que o {{tipo_pagamento}} do seu pedido *#{{numero_pedido}}* ainda não foi pago.\n\n💰 Valor: *{{total}}*\n\n{{chave_pix}}{{link_pagamento}}\n\nQualquer dúvida estamos aqui! 😊 — *{{loja}}*',
   },

@@ -100,7 +100,10 @@ function applyTemplate(template, vars) {
     .replace(/\{\{link_carrinho\}\}/gi,     vars.link_carrinho || '')
     .replace(/\{\{numero_pedido\}\}/gi,     vars.numero_pedido || '')
     .replace(/\{\{loja\}\}/gi,              vars.loja || 'nossa loja')
-    .replace(/\{\{dias_sem_comprar\}\}/gi,  vars.dias_sem_comprar || '');
+    .replace(/\{\{dias_sem_comprar\}\}/gi,  vars.dias_sem_comprar || '')
+    .replace(/\{\{chave_pix\}\}/gi,         vars.chave_pix || '')
+    .replace(/\{\{link_pagamento\}\}/gi,    vars.link_pagamento || '')
+    .replace(/\{\{tipo_pagamento\}\}/gi,    vars.tipo_pagamento || 'pagamento');
 }
 
 async function sendMessage(automation, phone, vars) {
@@ -233,10 +236,21 @@ async function processBoletoReminders(integration, automation) {
       const nome   = extractName(order).split(' ')[0];
       const total  = formatTotal(order.total);
       const numPed = String(order.number || orderId);
+      const method = order.payment_details?.method || '';
+      const isPix  = method.toLowerCase().includes('pix');
+
+      // PIX: código copia-e-cola e link da página de pagamento
+      const chavePix     = order.payment_details?.barcode || '';
+      const linkPagamento = order.payment_details?.external_resource_url
+        || order.payment_details?.ticket_url
+        || '';
 
       await sendMessage(automation, phone, {
         nome, total, numero_pedido: numPed,
-        loja: storeName || 'nossa loja',
+        loja:            storeName || 'nossa loja',
+        chave_pix:       isPix ? chavePix : '',
+        link_pagamento:  linkPagamento,
+        tipo_pagamento:  isPix ? 'PIX' : 'boleto',
       });
       await markSent(companyId, orderId, 'boleto_lembrete', phone);
       log.ok('Ecommerce', `[Boleto] Lembrete enviado → ${phone} (pedido #${numPed})`);

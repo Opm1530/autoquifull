@@ -59,10 +59,10 @@ const TRIGGERS = [
     color: '#ef4444',
     badge: 'A cada hora',
     desc: 'Lembra o cliente de pagar o boleto ou PIX pendente após X horas.',
-    vars: ['{{nome}}', '{{numero_pedido}}', '{{total}}', '{{loja}}'],
+    vars: ['{{nome}}', '{{numero_pedido}}', '{{total}}', '{{tipo_pagamento}}', '{{chave_pix}}', '{{link_pagamento}}', '{{loja}}'],
     defaultDelay: 20,
     defaultMsg:
-      'Oi, {{nome}}! 📄\n\nNotamos que o pagamento do seu pedido *#{{numero_pedido}}* ainda está pendente.\n\n💰 Valor: *{{total}}*\n\nVocê tem até hoje para pagar! Depois disso, o pedido será cancelado automaticamente.\n\nPrecisa de ajuda? Estamos aqui! 😊 — *{{loja}}*',
+      'Oi, {{nome}}! 📄\n\nNotamos que o {{tipo_pagamento}} do seu pedido *#{{numero_pedido}}* ainda não foi pago.\n\n💰 Valor: *{{total}}*\n\n{{chave_pix}}{{link_pagamento}}\n\nQualquer dúvida estamos aqui! 😊 — *{{loja}}*',
   },
   {
     id: 'reengajamento',

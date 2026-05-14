@@ -156,7 +156,7 @@ async function processAbandonedCarts(integration) {
     const nome     = extractName(cart).split(' ')[0];
     const produtos = extractProducts(cart);
     const total    = formatTotal(cart.total || cart.subtotal);
-    const link     = cart.checkout_url || '';
+    const link     = cart.abandoned_checkout_url || cart.checkout_url || '';
 
     try {
       await sendMessage(automation, phone, {

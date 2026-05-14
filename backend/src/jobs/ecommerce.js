@@ -236,7 +236,6 @@ async function processBoletoReminders(integration, automation) {
       const nome   = extractName(order).split(' ')[0];
       const total  = formatTotal(order.total);
       const numPed = String(order.number || orderId);
-      const method = order.payment_details?.method || '';
       const isPix  = method.toLowerCase().includes('pix');
 
       // PIX: código copia-e-cola e link da página de pagamento

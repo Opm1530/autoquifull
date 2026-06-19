@@ -17,8 +17,9 @@
   }
   var script = selfScript();
   var src = (script && script.src) || '';
-  var BASE = '';
-  try { BASE = new URL(src).origin; } catch (e) { BASE = ''; }
+  // Backend do EcoQui — FIXO, porque em produção a NuvemShop hospeda este arquivo no CDN dela
+  // (e aí não daria pra descobrir o backend pela origem do próprio script).
+  var BASE = 'https://autoqui.vps.pequi.digital';
 
   function getStoreId() {
     try {

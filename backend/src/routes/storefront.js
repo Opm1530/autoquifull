@@ -20,6 +20,18 @@ import { upsertLead } from '../services/firestore.js';
 const router = Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// As features rodam dentro da loja do cliente (domínio NuvemShop). Liberamos o
+// carregamento cross-origin do script e o fetch da config/claim de qualquer loja.
+// (sobrescreve o Cross-Origin-Resource-Policy: same-origin que o helmet aplica no app.js)
+router.use((req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────

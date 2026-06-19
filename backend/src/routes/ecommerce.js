@@ -41,7 +41,7 @@ const router = Router();
 // ─────────────────────────────────────────────────────────────
 
 function webhookUrl(companyId, backendUrl) {
-  const base = backendUrl || process.env.BACKEND_URL || 'https://backend.autoqui.com.br';
+  const base = backendUrl || process.env.BACKEND_URL || 'https://backend.ecoqui.com.br';
   return `${base}/ecommerce/webhook/${companyId}`;
 }
 
@@ -442,6 +442,41 @@ router.get('/instances/:companyId', async (req, res) => {
       .where('status', '==', 'conectado')
       .get();
     res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Storefront — config das features na loja (roleta, vídeos, checkout)
+// ─────────────────────────────────────────────────────────────
+
+const DEFAULT_STOREFRONT = {
+  roulette: { enabled: false, prizes: [], couponValidityDays: 7, minPrice: 0, maxUses: 1, capture: ['email'], theme: '#6366f1', title: 'Gire e ganhe um desconto!' },
+  videos:   { enabled: false, items: [] },
+  checkout: { enabled: false, timerMinutes: 0, banner: '', hidePayments: [], orderBump: null },
+};
+
+router.get('/storefront/:companyId', async (req, res) => {
+  try {
+    const db = getDb();
+    const doc = await db.collection('ecommerce_storefront').doc(req.params.companyId).get();
+    res.json(doc.exists ? { ...DEFAULT_STOREFRONT, ...doc.data() } : DEFAULT_STOREFRONT);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/storefront/:companyId', async (req, res) => {
+  const { roulette, videos, checkout } = req.body || {};
+  try {
+    const db = getDb();
+    const data = { updatedAt: new Date() };
+    if (roulette !== undefined) data.roulette = roulette;
+    if (videos   !== undefined) data.videos   = videos;
+    if (checkout !== undefined) data.checkout = checkout;
+    await db.collection('ecommerce_storefront').doc(req.params.companyId).set(data, { merge: true });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -214,7 +214,7 @@ async function processBoletoReminders(integration, automation) {
       {
         headers: {
           Authentication: `bearer ${accessToken}`,
-          'User-Agent': 'AutoQui/1.0',
+          'User-Agent': 'EcoQui/1.0',
           'Content-Type': 'application/json',
         },
       }
@@ -297,7 +297,7 @@ async function processReengagement(integration, automation) {
       {
         headers: {
           Authentication: `bearer ${accessToken}`,
-          'User-Agent': 'AutoQui/1.0',
+          'User-Agent': 'EcoQui/1.0',
           'Content-Type': 'application/json',
         },
       }

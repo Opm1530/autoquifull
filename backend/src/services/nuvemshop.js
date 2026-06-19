@@ -11,7 +11,7 @@
 import { log } from '../utils/logger.js';
 
 const BASE_URL  = 'https://api.nuvemshop.com.br/v1';
-const USER_AGENT = 'AutoQui/1.0 (suporte@autoqui.com.br)';
+const USER_AGENT = 'EcoQui/1.0 (suporte@ecoqui.com.br)';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -110,7 +110,7 @@ export async function registerWebhooks(storeId, accessToken, callbackUrl) {
 }
 
 /**
- * Remove todos os webhooks registrados pela AutoQui.
+ * Remove todos os webhooks registrados pela EcoQui.
  */
 export async function removeWebhooks(storeId, accessToken, callbackUrl) {
   const listRes = await request('GET', storeId, accessToken, '/webhooks');
@@ -121,6 +121,25 @@ export async function removeWebhooks(storeId, accessToken, callbackUrl) {
     await request('DELETE', storeId, accessToken, `/webhooks/${wh.id}`);
   }
   log.ok('NuvemShop', `${mine.length} webhook(s) removido(s) para loja ${storeId}`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Coupons (roleta de desconto)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Cria um cupom na loja.
+ * coupon: { code, type: 'percentage'|'absolute'|'shipping', value, max_uses,
+ *           min_price, start_date, end_date, combines_with_other_discounts }
+ * Retorna o objeto do cupom criado ou null.
+ */
+export async function createCoupon(storeId, accessToken, coupon) {
+  const res = await request('POST', storeId, accessToken, '/coupons', coupon);
+  if (!res.ok) {
+    log.warn('NuvemShop', `createCoupon falhou: ${res.status || ''} ${res.error || ''}`.slice(0, 200));
+    return null;
+  }
+  return res.data;
 }
 
 // ─────────────────────────────────────────────────────────────

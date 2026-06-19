@@ -1,24 +1,22 @@
 /**
- * Autoqui Backend — Entry Point
+ * EcoQui Backend — Entry Point
  *
  * Inicializa em ordem:
  * 1. Variáveis de ambiente
  * 2. Firebase Admin SDK
  * 3. Express app
  * 4. Servidor HTTP
- * 5. Jobs (lembretes de agendamento)
+ * 5. Jobs de e-commerce (carrinho abandonado, lembrete PIX/boleto, reengajamento)
  */
 
 import { validateEnv, ENV } from './config/env.js';
 import { initFirebase } from './config/firebase.js';
 import app from './app.js';
-import { startReminderJob } from './jobs/reminders.js';
-import { startCampaignJob } from './jobs/campaigns.js';
 import { startEcommerceJobs } from './jobs/ecommerce.js';
 
 async function bootstrap() {
   try {
-    console.log('🚀 Iniciando Autoqui Backend...');
+    console.log('🚀 Iniciando EcoQui Backend...');
 
     // 1. Valida variáveis de ambiente
     validateEnv();
@@ -34,9 +32,7 @@ async function bootstrap() {
       console.log(`   Webhook: http://localhost:${ENV.PORT}/webhook/evolution/:instanceName`);
     });
 
-    // 4. Inicia os jobs (crons)
-    startReminderJob();
-    startCampaignJob();
+    // 4. Inicia os jobs (crons de e-commerce)
     startEcommerceJobs();
 
     // Graceful shutdown

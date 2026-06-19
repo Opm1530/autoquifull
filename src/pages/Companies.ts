@@ -22,17 +22,12 @@ interface Company {
 export const Companies = async () => {
     let companies = await dbService.getAll('companies') as Company[];
     let modulesMS: MultiSelect | null = null;
-    let lastSelectedModules: string[] = ['venda'];
 
     // Módulos disponíveis — nova estrutura
     // Regras: venda e agendamento são mutuamente exclusivos
     // catalogo pode ser combinado com venda OU agendamento
     // disparo pode ser combinado com qualquer módulo
     const moduleOptions = [
-        { value: 'catalogo',    label: '🛍️ Catálogo' },
-        { value: 'venda',       label: '🤖 IA de Venda' },
-        { value: 'agendamento', label: '📅 IA de Agendamento' },
-        { value: 'disparo',     label: '📣 Disparo em Massa' },
         { value: 'ecommerce',   label: '🛒 E-commerce' },
     ];
 
@@ -129,9 +124,8 @@ export const Companies = async () => {
 
             // Set multi-select values
             if (modulesMS) {
-                const modulos = company.modulos_ativos || ['venda'];
+                const modulos = company.modulos_ativos || ['ecommerce'];
                 modulesMS.setValues(modulos);
-                lastSelectedModules = modulos;
             }
 
             document.getElementById('owner-section')!.style.display = 'none';
@@ -316,37 +310,8 @@ export const Companies = async () => {
         modulesMS = new MultiSelect(
             'modules-select-container',
             moduleOptions,
-            ['venda'],
-            (selected) => {
-                const added = selected.find(m => !lastSelectedModules.includes(m));
-
-                // Regra: venda e agendamento são mutuamente exclusivos
-                if (added === 'venda' && selected.includes('agendamento')) {
-                    const filtered = selected.filter(m => m !== 'agendamento');
-                    modulesMS?.setValues(filtered);
-                    lastSelectedModules = filtered;
-                    toast.warning('IA de Venda e IA de Agendamento não podem ser usadas juntas.');
-                    return;
-                }
-                if (added === 'agendamento' && selected.includes('venda')) {
-                    const filtered = selected.filter(m => m !== 'venda');
-                    modulesMS?.setValues(filtered);
-                    lastSelectedModules = filtered;
-                    toast.warning('IA de Agendamento e IA de Venda não podem ser usadas juntas.');
-                    return;
-                }
-
-                if (false) {
-                    // placeholder para manter a estrutura do if/else abaixo
-                    const filtered = selected;
-                    if (filtered.length !== selected.length) {
-                        modulesMS?.setValues(filtered);
-                        lastSelectedModules = filtered;
-                        return;
-                    }
-                }
-                lastSelectedModules = selected;
-            },
+            ['ecommerce'],
+            () => {},
             'Selecione os módulos...'
         );
 
@@ -363,8 +328,7 @@ export const Companies = async () => {
                 document.getElementById('company-modal-title')!.innerText = 'Novo Cliente';
 
                 if (modulesMS) {
-                    modulesMS.setValues(['venda']);
-                    lastSelectedModules = ['venda'];
+                    modulesMS.setValues(['ecommerce']);
                 }
 
                 if (storesList) {
@@ -393,20 +357,9 @@ export const Companies = async () => {
                 const password = (document.getElementById('owner-password') as HTMLInputElement).value;
                 const instancesLimit = parseInt((document.getElementById('company-instances-limit') as HTMLInputElement).value) || 1;
 
-                const modulos_ativos = modulesMS ? modulesMS.getValues() : ['venda'];
-
-                // Validação final: venda e agendamento não podem coexistir
-                if (modulos_ativos.includes('venda') && modulos_ativos.includes('agendamento')) {
-                    toast.error('IA de Venda e IA de Agendamento não podem ser ativadas juntas no mesmo cliente.');
-                    return;
-                }
-
-                // Deve ter ao menos um módulo principal
-                const hasPrincipal = modulos_ativos.some(m => ['catalogo', 'venda', 'agendamento'].includes(m));
-                if (!hasPrincipal) {
-                    toast.error('Selecione ao menos um módulo principal (Catálogo, IA de Venda ou IA de Agendamento).');
-                    return;
-                }
+                const modulos_ativos = modulesMS && modulesMS.getValues().length
+                    ? modulesMS.getValues()
+                    : ['ecommerce'];
 
                 const storeRows = document.querySelectorAll('.store-row');
                 const stores: any[] = [];

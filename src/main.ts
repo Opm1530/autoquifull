@@ -1,7 +1,6 @@
 import './style.css';
 import { AdminSidebar } from './components/AdminSidebar';
 import { OwnerSidebar } from './components/OwnerSidebar';
-import { EmployeeSidebar } from './components/EmployeeSidebar';
 import { Topbar, initTheme } from './components/Topbar';
 
 /** Inicializa o menu lateral recolhível */
@@ -20,36 +19,39 @@ function initSidebar() {
   });
 }
 import { Dashboard } from './pages/Dashboard';
-import { Orders } from './pages/Orders';
-import { Products } from './pages/Products';
-import { Stores } from './pages/Stores';
 import { AdminUsers } from './pages/AdminUsers';
 import { OwnerUsers } from './pages/OwnerUsers';
-import { AIConfig } from './pages/AIConfig';
 import { Login } from './pages/Login';
 import { Companies } from './pages/Companies';
 import { Instances } from './pages/Instances';
 import { Configuration } from './pages/Configuration';
 import { authService } from './services/auth';
 import { toast } from './services/toast';
-import { orderNotification } from './services/orderNotification';
 import type { UserRole } from './services/auth';
-import { Leads } from './pages/Leads';
-import { orderService } from './services/orderService';
-import { Campaigns } from './pages/Campaigns';
-import { Schedule } from './pages/Schedule';
-import { ScheduleClients } from './pages/ScheduleClients';
 import { Webhooks } from './pages/Webhooks';
-import { MercadoPago } from './pages/MercadoPago';
 import { Ecommerce, initEcommerce } from './pages/Ecommerce';
-
-import { Catalog } from './pages/Catalog';
 import { QRPage } from './pages/QRPage';
-import { CatalogSettings } from './pages/CatalogSettings';
 import { LandingPage } from './pages/LandingPage';
-import { AdminMigration } from './pages/AdminMigration';
-import { Plans } from './pages/Plans';
 import { BackendLogs } from './pages/BackendLogs';
+import { Subscription } from './pages/Subscription';
+
+// ─────────────────────────────────────────────────────────────
+// Gate de assinatura Kiwify
+// Enquanto a Kiwify não estiver configurada, mantenha DESLIGADO.
+// Ligue para `true` quando o webhook/credenciais estiverem prontos.
+// ─────────────────────────────────────────────────────────────
+const KIWIFY_ENFORCE = false;
+
+async function hasActiveSubscription(user: any): Promise<boolean> {
+  if (!user?.companyId) return false;
+  try {
+    const { dbService } = await import('./services/db');
+    const company = await dbService.get('companies', user.companyId) as any;
+    return company?.assinaturaStatus === 'active';
+  } catch {
+    return true; // fail-open: nunca trava o app por erro de leitura
+  }
+}
 
 // Core Application Logic
 class App {
@@ -61,18 +63,8 @@ class App {
   }
 
   private init() {
-    let lastUserUid: string | null = null;
-    authService.subscribe((user) => {
+    authService.subscribe(() => {
       this.render();
-      if (user) {
-        if (user.uid !== lastUserUid) {
-          lastUserUid = user.uid;
-          orderNotification.startListening();
-        }
-      } else {
-        lastUserUid = null;
-        orderNotification.stopListening();
-      }
     });
     this.handleRouting();
 
@@ -141,12 +133,6 @@ class App {
 
     // 2. Unauthenticated -> Login or Public Route
     if (!user) {
-      if (path.startsWith('/catalog/')) {
-        const storeId = path.split('/').pop() || '';
-        this.appElement.innerHTML = await Catalog(storeId);
-        return;
-      }
-
       if (path.startsWith('/qr/')) {
         const instanceName = path.split('/').pop() || '';
         this.appElement.innerHTML = await QRPage(instanceName);
@@ -168,29 +154,28 @@ class App {
       return;
     }
 
-    if (path.startsWith('/catalog/')) {
-      const storeId = path.split('/').pop() || '';
-      this.appElement.innerHTML = await Catalog(storeId);
-      return;
-    }
-
     if (path.startsWith('/qr/')) {
       const instanceName = path.split('/').pop() || '';
       this.appElement.innerHTML = await QRPage(instanceName);
       return;
     }
 
-    // 3. Role-Based Access Control
+    // 4. Role-Based Access Control
     if (!this.isRouteAllowed(path, user.role)) {
       this.appElement.innerHTML = `<h1>403 Forbidden</h1><p>Você não tem permissão para acessar esta página.</p>`;
       return;
     }
 
-    const pageTitle = await this.getPageTitle(path);
-    let SidebarComponent: () => Promise<string> | string;
-    if (user.role === 'admin') SidebarComponent = AdminSidebar;
-    else if (user.role === 'employee') SidebarComponent = EmployeeSidebar;
-    else SidebarComponent = OwnerSidebar;
+    // 5. Gate de assinatura — bloqueia owners/employees sem assinatura ativa
+    let effectivePath = path;
+    if (KIWIFY_ENFORCE && user.role !== 'admin' && path !== '/subscription') {
+      const active = await hasActiveSubscription(user);
+      if (!active) effectivePath = '/subscription';
+    }
+
+    const pageTitle = await this.getPageTitle(effectivePath);
+    const SidebarComponent: () => Promise<string> | string =
+      user.role === 'admin' ? AdminSidebar : OwnerSidebar;
 
     // Layout structure: Render a loading state first
     const sidebarHtml = await SidebarComponent();
@@ -218,13 +203,13 @@ class App {
     }, 0);
 
     try {
-        const content = await this.getPageContent(path);
+        const content = await this.getPageContent(effectivePath);
         const pageContainer = document.getElementById('page-content');
         if (pageContainer) {
             pageContainer.innerHTML = content;
         }
         // Run page-specific init after DOM is set
-        if (path === '/ecommerce') initEcommerce();
+        if (effectivePath === '/ecommerce') initEcommerce();
     } catch (e) {
         console.error('Error loading page content:', e);
         const pageContainer = document.getElementById('page-content');
@@ -240,7 +225,6 @@ class App {
     }
 
     this.updateActiveLinks();
-    this.updateOrderCounter();
   }
 
   private isRouteAllowed(path: string, role: UserRole): boolean {
@@ -253,78 +237,37 @@ class App {
   }
 
   private async getPageTitle(path: string): Promise<string> {
-    if (path === '/products') {
-      const user = authService.getCurrentUser() as any;
-      if (user?.companyId) {
-        try {
-          const { dbService } = await import('./services/db');
-          const company = await dbService.get('companies', user.companyId) as any;
-          const modulos = company?.modulos_ativos || [];
-          if (modulos.includes('agendamento')) return 'Serviços';
-        } catch { /* fallback */ }
-      }
-      return 'Produtos';
-    }
     switch (path) {
       case '/':
       case '/dashboard':
       case '/admin/dashboard': return 'Dashboard';
-      case '/orders': return 'Pedidos';
-      case '/stores': return 'Lojas';
-      case '/leads': return 'Leads';
       case '/users':
       case '/admin/users': return 'Usuários';
-      case '/admin/ai-config': return 'Configuração IA';
       case '/companies':
       case '/admin/companies': return 'Gestão de Clientes';
       case '/instances': return 'Instâncias';
       case '/configuration': return 'Configurações';
-      case '/campaigns': return 'Campanhas';
-      case '/schedule': return 'Agenda';
-      case '/schedule-clients': return 'Clientes';
+      case '/subscription': return 'Assinatura';
       case '/admin/webhooks': return 'Configuração do Backend';
-      case '/admin/plans': return 'Planos e Assinaturas';
+      case '/admin/subscriptions': return 'Assinaturas';
       case '/admin/logs': return 'Logs do Servidor';
-      case '/admin/migration': return 'Migração de Produtos';
-      case '/mercado-pago': return 'Mercado Pago';
-      case '/catalog-settings': return 'Configuração';
       case '/ecommerce': return 'E-commerce';
       default: return 'Página não encontrada';
     }
   }
 
   private async getPageContent(path: string): Promise<string> {
-    // Map routes to components
-    // We can reuse components for now, but in future might want specific ones
     switch (path) {
       case '/':
       case '/dashboard':
       case '/admin/dashboard':
         return Dashboard();
-      case '/orders':
-        return Orders();
-      case '/products':
-        return await Products();
-      case '/stores':
-        return await Stores();
-      case '/leads':
-        return await Leads();
-      // Imports update (implicit in this tool call context, but I need to be careful about line numbers)
-      // I will split this into two calls or use multi_replace if I could, but I'll update imports separate from this chunk if needed. 
-      // Actually, let's just update the getPageContent first.
-      case '/users':
-        // If we are here, role could be logic-checked or we can infer from path if we had /admin/users vs /users
-        // But /users is shared in the route switch map. 
-        // Wait, in getPageTitle I mapped /users and /admin/users.
-        // Let's use logic here.
-        // But getPageContent doesn't have access to 'user' variable easily unless I pass it or access authService.
-        // Use authService.getCurrentUser().
+      case '/users': {
         const user = authService.getCurrentUser();
         return user?.role === 'admin' ? AdminUsers() : OwnerUsers();
+      }
       case '/admin/users':
         return AdminUsers();
-      case '/admin/ai-config':
-        return AIConfig();
       case '/companies':
       case '/admin/companies':
         return await Companies();
@@ -332,24 +275,14 @@ class App {
         return Instances();
       case '/configuration':
         return Configuration();
-      case '/campaigns':
-        return Campaigns();
-      case '/schedule':
-        return Schedule();
-      case '/schedule-clients':
-        return ScheduleClients();
+      case '/subscription':
+        return await Subscription();
+      case '/admin/subscriptions':
+        return await Subscription();
       case '/admin/webhooks':
         return await Webhooks();
-      case '/admin/plans':
-        return await Plans();
       case '/admin/logs':
         return await BackendLogs();
-      case '/admin/migration':
-        return await AdminMigration();
-      case '/mercado-pago':
-        return await MercadoPago();
-      case '/catalog-settings':
-        return await CatalogSettings();
       case '/ecommerce':
         return await Ecommerce();
       default:
@@ -368,27 +301,6 @@ class App {
         item.classList.remove('active');
       }
     });
-  }
-
-  private async updateOrderCounter() {
-    const user = authService.getCurrentUser();
-    if (!user || !user.companyId || user.role === 'admin') return;
-
-    try {
-      const userStoreIds = user.storeIds || (user.storeId ? [user.storeId] : []);
-      const count = await orderService.getOpenOrdersCount(user.companyId, user.role === 'owner' ? [] : userStoreIds);
-      const badge = document.getElementById('orders-count-badge');
-      if (badge) {
-        badge.textContent = count.toString();
-        if (count > 0) {
-          badge.classList.remove('hidden');
-        } else {
-          badge.classList.add('hidden');
-        }
-      }
-    } catch (error) {
-      console.error('Error updating order counter:', error);
-    }
   }
 }
 

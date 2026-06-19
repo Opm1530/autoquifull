@@ -403,7 +403,7 @@ function renderConnectForm(companyId: string, errorMsg = '') {
         </div>
         <h2 style="font-size:1.3rem;font-weight:800;margin:0 0 0.4rem;">Conectar NuvemShop</h2>
         <p style="font-size:0.875rem;color:var(--text-dim);margin:0;">
-          Autorize o AutoQui a acessar sua loja em apenas 1 clique.
+          Autorize o EcoQui a acessar sua loja em apenas 1 clique.
         </p>
       </div>
 
@@ -483,16 +483,33 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
     </div>
 
     <!-- Tabs -->
-    <div class="ec-tabs">
+    <div class="ec-tabs" style="flex-wrap:wrap;">
       <button class="ec-tab active" data-tab="automations" onclick="window.ecSwitchTab('automations')">
         <i class="fa-solid fa-bolt"></i> Automações
+      </button>
+      <button class="ec-tab" data-tab="roulette" onclick="window.ecSwitchTab('roulette')">
+        <i class="fa-solid fa-dharmachakra"></i> Roleta
+      </button>
+      <button class="ec-tab" data-tab="videos" onclick="window.ecSwitchTab('videos')">
+        <i class="fa-solid fa-video"></i> Vídeos
+      </button>
+      <button class="ec-tab" data-tab="checkout" onclick="window.ecSwitchTab('checkout')">
+        <i class="fa-solid fa-cart-shopping"></i> Checkout
       </button>
       <button class="ec-tab" data-tab="history" onclick="window.ecSwitchTab('history')">
         <i class="fa-solid fa-clock-rotate-left"></i> Histórico
       </button>
     </div>
 
+    <div class="ec-alert info" style="margin-bottom:1.25rem;">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>As features <strong>Roleta</strong>, <strong>Vídeos</strong> e <strong>Checkout</strong> rodam dentro da sua loja NuvemShop via script. Após ativar, <strong>reconecte a loja</strong> uma vez para autorizar o script.</div>
+    </div>
+
     <div id="ec-tab-automations"></div>
+    <div id="ec-tab-roulette" style="display:none;"></div>
+    <div id="ec-tab-videos" style="display:none;"></div>
+    <div id="ec-tab-checkout" style="display:none;"></div>
     <div id="ec-tab-history" style="display:none;"></div>
   `;
 
@@ -502,7 +519,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   (window as any).ecSwitchTab = (tab: string) => {
     document.querySelectorAll('.ec-tab').forEach((el) => el.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-    ['automations', 'history'].forEach((t) => {
+    ['automations', 'roulette', 'videos', 'checkout', 'history'].forEach((t) => {
       const el = document.getElementById(`ec-tab-${t}`);
       if (el) el.style.display = t === tab ? '' : 'none';
     });
@@ -510,6 +527,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   };
 
   loadAutomations(companyId, instances);
+  loadStorefront(companyId);
 }
 
 async function disconnectStore(companyId: string) {
@@ -759,6 +777,204 @@ async function loadHistory(companyId: string) {
       </table>
     </div>
   `;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Storefront: Roleta, Vídeos, Checkout
+// ─────────────────────────────────────────────────────────────
+
+async function loadStorefront(companyId: string) {
+  const cfg = await fetch(`/ecommerce/storefront/${companyId}`).then((r) => r.json()).catch(() => ({}));
+  renderRoulette(companyId, cfg.roulette || {});
+  renderVideos(companyId, cfg.videos || {});
+  renderCheckout(companyId, cfg.checkout || {});
+
+  (window as any).ecSaveStorefront = async (section: string) => {
+    const btn = document.getElementById(`ec-sf-save-${section}`) as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`; }
+    const body: any = {};
+    if (section === 'roulette') body.roulette = collectRoulette();
+    if (section === 'videos')   body.videos   = collectVideos();
+    if (section === 'checkout') body.checkout = collectCheckout();
+    try {
+      await fetch(`/ecommerce/storefront/${companyId}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-check"></i> Salvo!`; setTimeout(() => { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar`; }, 1800); }
+    } catch {
+      if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar`; }
+    }
+  };
+
+  (window as any).ecAddPrize = () => addPrizeRow();
+  (window as any).ecAddVideo = () => addVideoRow();
+}
+
+function field(label: string, inner: string) {
+  return `<div class="ec-field"><label>${label}</label>${inner}</div>`;
+}
+function saveBtn(section: string) {
+  return `<button class="ec-btn ec-btn-primary" id="ec-sf-save-${section}" onclick="window.ecSaveStorefront('${section}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>`;
+}
+
+// ── Roleta ──
+function renderRoulette(_companyId: string, r: any) {
+  const c = document.getElementById('ec-tab-roulette');
+  if (!c) return;
+  const cap = r.capture || ['email'];
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      <div class="ec-auto-grid">
+        ${field('Ativar roleta', `<label class="ec-toggle"><input type="checkbox" id="ec-rl-enabled" ${r.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Cor do tema', `<input class="ec-select" type="color" id="ec-rl-theme" value="${r.theme || '#6366f1'}">`)}
+      </div>
+      ${field('Título do popup', `<input class="ec-select" id="ec-rl-title" value="${(r.title || 'Gire e ganhe um desconto!').replace(/"/g, '&quot;')}">`)}
+      <div class="ec-auto-grid" style="margin-top:1rem;">
+        ${field('Validade do cupom (dias)', `<input class="ec-select" type="number" min="1" id="ec-rl-validity" value="${r.couponValidityDays || 7}">`)}
+        ${field('Valor mínimo do pedido (R$)', `<input class="ec-select" type="number" min="0" id="ec-rl-minprice" value="${r.minPrice || 0}">`)}
+        ${field('Usos por cupom', `<input class="ec-select" type="number" min="1" id="ec-rl-maxuses" value="${r.maxUses || 1}">`)}
+        ${field('Capturar', `<div style="display:flex;gap:14px;align-items:center;padding-top:8px;">
+          <label style="display:flex;gap:6px;align-items:center;font-size:.85rem;"><input type="checkbox" id="ec-rl-cap-email" ${cap.includes('email') ? 'checked' : ''}> E-mail</label>
+          <label style="display:flex;gap:6px;align-items:center;font-size:.85rem;"><input type="checkbox" id="ec-rl-cap-phone" ${cap.includes('phone') ? 'checked' : ''}> WhatsApp</label>
+        </div>`)}
+      </div>
+
+      <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:block;">Prêmios da roleta</label>
+      <div id="ec-rl-prizes"></div>
+      <button class="ec-btn ec-btn-secondary" onclick="window.ecAddPrize()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar prêmio</button>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Tipo "Nenhum" = fatia "tente de novo". Peso define a chance relativa de cada fatia.</p>
+
+      <div style="margin-top:1.25rem;">${saveBtn('roulette')}</div>
+    </div>`;
+
+  const prizes = (r.prizes && r.prizes.length) ? r.prizes : [
+    { label: '10% OFF', type: 'percentage', value: 10, weight: 3 },
+    { label: 'Frete grátis', type: 'shipping', value: '', weight: 2 },
+    { label: 'Tente de novo', type: 'none', value: '', weight: 4 },
+  ];
+  prizes.forEach((p: any) => addPrizeRow(p));
+}
+
+function addPrizeRow(p: any = {}) {
+  const host = document.getElementById('ec-rl-prizes');
+  if (!host) return;
+  const row = document.createElement('div');
+  row.className = 'ec-prize-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 130px 90px 80px 36px;gap:8px;margin-bottom:8px;align-items:center;';
+  const t = p.type || 'percentage';
+  row.innerHTML = `
+    <input class="ec-select ec-pz-label" placeholder="Rótulo (ex: 10% OFF)" value="${(p.label || '').replace(/"/g, '&quot;')}">
+    <select class="ec-select ec-pz-type">
+      <option value="percentage" ${t === 'percentage' ? 'selected' : ''}>% desconto</option>
+      <option value="absolute" ${t === 'absolute' ? 'selected' : ''}>R$ desconto</option>
+      <option value="shipping" ${t === 'shipping' ? 'selected' : ''}>Frete grátis</option>
+      <option value="none" ${t === 'none' ? 'selected' : ''}>Nenhum</option>
+    </select>
+    <input class="ec-select ec-pz-value" type="number" placeholder="valor" value="${p.value ?? ''}">
+    <input class="ec-select ec-pz-weight" type="number" placeholder="peso" value="${p.weight ?? 1}">
+    <button class="ec-btn ec-btn-danger" style="padding:.5rem;" onclick="this.closest('.ec-prize-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+  host.appendChild(row);
+}
+
+function collectRoulette() {
+  const prizes: any[] = [];
+  document.querySelectorAll('#ec-rl-prizes .ec-prize-row').forEach((row) => {
+    const label = (row.querySelector('.ec-pz-label') as HTMLInputElement)?.value?.trim();
+    const type  = (row.querySelector('.ec-pz-type') as HTMLSelectElement)?.value;
+    const value = (row.querySelector('.ec-pz-value') as HTMLInputElement)?.value;
+    const weight = parseInt((row.querySelector('.ec-pz-weight') as HTMLInputElement)?.value || '1');
+    if (label) prizes.push({ label, type, value: type === 'shipping' || type === 'none' ? '' : Number(value || 0), weight: weight || 1 });
+  });
+  const cap: string[] = [];
+  if ((document.getElementById('ec-rl-cap-email') as HTMLInputElement)?.checked) cap.push('email');
+  if ((document.getElementById('ec-rl-cap-phone') as HTMLInputElement)?.checked) cap.push('phone');
+  return {
+    enabled: (document.getElementById('ec-rl-enabled') as HTMLInputElement)?.checked || false,
+    theme: (document.getElementById('ec-rl-theme') as HTMLInputElement)?.value || '#6366f1',
+    title: (document.getElementById('ec-rl-title') as HTMLInputElement)?.value || '',
+    couponValidityDays: parseInt((document.getElementById('ec-rl-validity') as HTMLInputElement)?.value || '7'),
+    minPrice: parseFloat((document.getElementById('ec-rl-minprice') as HTMLInputElement)?.value || '0'),
+    maxUses: parseInt((document.getElementById('ec-rl-maxuses') as HTMLInputElement)?.value || '1'),
+    capture: cap.length ? cap : ['email'],
+    prizes,
+  };
+}
+
+// ── Vídeos ──
+function renderVideos(_companyId: string, v: any) {
+  const c = document.getElementById('ec-tab-videos');
+  if (!c) return;
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      ${field('Ativar vídeos na loja', `<label class="ec-toggle"><input type="checkbox" id="ec-vd-enabled" ${v.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:block;">Vídeos</label>
+      <div id="ec-vd-list"></div>
+      <button class="ec-btn ec-btn-secondary" onclick="window.ecAddVideo()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar vídeo</button>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Aceita link do YouTube ou arquivo .mp4/.webm.</p>
+      <div style="margin-top:1.25rem;">${saveBtn('videos')}</div>
+    </div>`;
+  (v.items || []).forEach((it: any) => addVideoRow(it));
+}
+
+function addVideoRow(it: any = {}) {
+  const host = document.getElementById('ec-vd-list');
+  if (!host) return;
+  const row = document.createElement('div');
+  row.className = 'ec-video-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 150px 130px 36px;gap:8px;margin-bottom:8px;align-items:center;';
+  const pos = it.position || 'flutuante';
+  row.innerHTML = `
+    <input class="ec-select ec-vd-url" placeholder="URL do vídeo" value="${(it.url || '').replace(/"/g, '&quot;')}">
+    <input class="ec-select ec-vd-title" placeholder="Título (opcional)" value="${(it.title || '').replace(/"/g, '&quot;')}">
+    <select class="ec-select ec-vd-pos">
+      <option value="flutuante" ${pos === 'flutuante' ? 'selected' : ''}>Flutuante</option>
+      <option value="produto" ${pos === 'produto' ? 'selected' : ''}>Página produto</option>
+      <option value="home" ${pos === 'home' ? 'selected' : ''}>Home</option>
+    </select>
+    <button class="ec-btn ec-btn-danger" style="padding:.5rem;" onclick="this.closest('.ec-video-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+  host.appendChild(row);
+}
+
+function collectVideos() {
+  const items: any[] = [];
+  document.querySelectorAll('#ec-vd-list .ec-video-row').forEach((row) => {
+    const url = (row.querySelector('.ec-vd-url') as HTMLInputElement)?.value?.trim();
+    const title = (row.querySelector('.ec-vd-title') as HTMLInputElement)?.value?.trim();
+    const position = (row.querySelector('.ec-vd-pos') as HTMLSelectElement)?.value;
+    if (url) items.push({ url, title, position });
+  });
+  return { enabled: (document.getElementById('ec-vd-enabled') as HTMLInputElement)?.checked || false, items };
+}
+
+// ── Checkout ──
+function renderCheckout(_companyId: string, ck: any) {
+  const c = document.getElementById('ec-tab-checkout');
+  if (!c) return;
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      ${field('Ativar ajustes no checkout', `<label class="ec-toggle"><input type="checkbox" id="ec-ck-enabled" ${ck.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      <div class="ec-auto-grid" style="margin-top:1rem;">
+        ${field('Timer de urgência (min, 0 = off)', `<input class="ec-select" type="number" min="0" id="ec-ck-timer" value="${ck.timerMinutes || 0}">`)}
+        ${field('Esconder pagamentos (IDs, separados por vírgula)', `<input class="ec-select" id="ec-ck-hide" value="${(ck.hidePayments || []).join(', ')}">`)}
+      </div>
+      ${field('Banner no topo do checkout', `<input class="ec-select" id="ec-ck-banner" value="${(ck.banner || '').replace(/"/g, '&quot;')}">`)}
+      <div class="ec-alert warning" style="margin-top:1rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>O checkout da NuvemShop é fechado: timer e banner são garantidos; esconder pagamentos depende do que o Checkout SDK expõe na loja.</div>
+      </div>
+      <div style="margin-top:1.25rem;">${saveBtn('checkout')}</div>
+    </div>`;
+}
+
+function collectCheckout() {
+  const hide = ((document.getElementById('ec-ck-hide') as HTMLInputElement)?.value || '')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  return {
+    enabled: (document.getElementById('ec-ck-enabled') as HTMLInputElement)?.checked || false,
+    timerMinutes: parseInt((document.getElementById('ec-ck-timer') as HTMLInputElement)?.value || '0'),
+    banner: (document.getElementById('ec-ck-banner') as HTMLInputElement)?.value || '',
+    hidePayments: hide,
+  };
 }
 
 function formatDate(ts: any) {

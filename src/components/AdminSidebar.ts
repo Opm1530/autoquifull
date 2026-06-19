@@ -3,7 +3,7 @@ export const AdminSidebar = () => {
         <div class="sidebar" id="main-sidebar">
             <div class="sidebar-logo">
                 <div class="logo-icon"><img src="/logo.png" alt="Logo"></div>
-                <span class="logo-text">Admin</span>
+                <span class="logo-text">EcoQui Admin</span>
                 <button class="sidebar-toggle" id="sidebar-toggle" title="Recolher menu">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
@@ -26,9 +26,9 @@ export const AdminSidebar = () => {
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Planos & Finanças</span>
 
-                <a href="/admin/plans" class="nav-item" data-label="Planos">
-                    <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
-                    <span class="nav-label">Planos</span>
+                <a href="/admin/subscriptions" class="nav-item" data-label="Assinaturas">
+                    <span class="nav-icon"><i class="fa-solid fa-crown"></i></span>
+                    <span class="nav-label">Assinaturas</span>
                 </a>
 
                 <div class="nav-divider"></div>
@@ -41,10 +41,6 @@ export const AdminSidebar = () => {
                 <a href="/admin/logs" class="nav-item" data-label="Logs">
                     <span class="nav-icon"><i class="fa-solid fa-terminal"></i></span>
                     <span class="nav-label">Logs</span>
-                </a>
-                <a href="/admin/migration" class="nav-item" data-label="Migração">
-                    <span class="nav-icon"><i class="fa-solid fa-database"></i></span>
-                    <span class="nav-label">Migração</span>
                 </a>
             </nav>
 

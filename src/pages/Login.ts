@@ -6,7 +6,7 @@ export const Login = () => {
             <div class="login-card glass">
                 <div class="login-header">
                     <div class="logo-icon large"><img style="width: 100%;" src="/logo.png" alt="Logo"></div>
-                    <h1>AutoQui</h1>
+                    <h1>EcoQui</h1>
                     <p>Entre com suas credenciais para acessar a plataforma.</p>
                 </div>
                 <form id="login-form" class="login-form">

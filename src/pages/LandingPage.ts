@@ -418,8 +418,8 @@ export const LandingPage = () => {
 
         <nav class="lp-navbar">
             <div class="lp-logo">
-                <img src="/logo.png" alt="AutoQui Logo">
-                <span>AutoQui</span>
+                <img src="/logo.png" alt="EcoQui Logo">
+                <span>EcoQui</span>
             </div>
             <div class="lp-nav-links">
                 <a href="#pricing" class="lp-nav-link">Planos</a>
@@ -430,12 +430,12 @@ export const LandingPage = () => {
         </nav>
 
         <section class="lp-hero">
-            <div class="lp-badge">Tecnologia de Ponta para o seu Negócio</div>
-            <h1>Aumente suas vendas com <span>Automação Inteligente</span></h1>
-            <p>O AutoQui é a plataforma definitiva para quem deseja automatizar processos, gerenciar pedidos via catálogo e manter um relacionamento premium com clientes via WhatsApp.</p>
+            <div class="lp-badge">Automação de WhatsApp para Loja Virtual</div>
+            <h1>Recupere vendas com <span>WhatsApp Automático</span></h1>
+            <p>O EcoQui conecta sua loja NuvemShop ao WhatsApp e dispara mensagens automáticas: carrinho abandonado, pagamento aprovado, código de rastreio, lembrete de PIX/boleto e reengajamento — sem você fazer nada.</p>
             <div class="lp-hero-btns">
                 <a href="https://wa.me/5564996168691" target="_blank" class="lp-btn-primary">Falar com Consultor</a>
-                <a href="#solucoes" class="lp-btn-secondary">Conhecer Módulos</a>
+                <a href="#solucoes" class="lp-btn-secondary">Ver Automações</a>
             </div>
         </section>
 
@@ -443,15 +443,15 @@ export const LandingPage = () => {
         <section id="solucoes" class="lp-section alt">
             <div class="lp-grid-2">
                 <div class="lp-feat-content">
-                    <div class="lp-badge" style="margin-bottom:1.5rem">Inteligência Artificial</div>
-                    <h2>Atendimento Humano em Escala de Robô</h2>
-                    <p>Nossa IA não apenas responde, ela entende o contexto. Transforme seu WhatsApp em uma máquina de vendas que nunca dorme.</p>
+                    <div class="lp-badge" style="margin-bottom:1.5rem">Recuperação de Carrinho</div>
+                    <h2>Traga de volta quem abandonou o carrinho</h2>
+                    <p>O EcoQui monitora os carrinhos abandonados da sua loja e envia uma mensagem no WhatsApp com os produtos e o link para finalizar a compra. Vendas que iriam para o lixo voltam para o seu caixa.</p>
                     <ul class="lp-feat-list">
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Qualificação automática de leads</li>
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Agendamentos sincronizados em tempo real</li>
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Transição suave para atendente humano</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Detecção automática de carrinho abandonado</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Mensagem com produtos e link do checkout</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Delay configurável e template editável</li>
                     </ul>
-                    <a href="https://wa.me/5564996168691" target="_blank" class="lp-btn-primary" style="padding: 0.9rem 2rem; font-size: 1rem;">Quero Automatizar</a>
+                    <a href="https://wa.me/5564996168691" target="_blank" class="lp-btn-primary" style="padding: 0.9rem 2rem; font-size: 1rem;">Quero Recuperar Vendas</a>
                 </div>
                 <div class="lp-feat-image">
                     <img src="https://img.freepik.com/premium-photo/robot-operating-laptop-futuristic-office-generative-ai_124507-65715.jpg" alt="IA Atendimento">
@@ -463,13 +463,13 @@ export const LandingPage = () => {
         <section class="lp-section">
             <div class="lp-grid-2 reverse">
                 <div class="lp-feat-content">
-                    <div class="lp-badge" style="margin-bottom:1.5rem">E-commerce de Próxima Geração</div>
-                    <h2>Um Catálogo que é mais que uma Loja</h2>
-                    <p>Ofereça aos seus clientes uma experiência de compra fluida, rápida e integrada. Nada de aplicativos pesados, tudo direto no navegador.</p>
+                    <div class="lp-badge" style="margin-bottom:1.5rem">Pós-venda Automático</div>
+                    <h2>Mantenha o cliente informado em cada etapa</h2>
+                    <p>Do pagamento aprovado ao código de rastreio, o EcoQui avisa seu cliente automaticamente pelo WhatsApp. Menos "cadê meu pedido?" no seu atendimento e mais confiança na sua loja.</p>
                     <ul class="lp-feat-list">
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Checkout em menos de 30 segundos</li>
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Integração nativa com Mercado Pago (PIX)</li>
-                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Controle de estoque e gatilhos de escassez</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Confirmação de pagamento aprovado</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Envio do código de rastreio dos Correios</li>
+                        <li class="lp-feat-item"><i class="fa-solid fa-circle-check"></i> Lembrete de PIX/boleto pendente</li>
                     </ul>
                     <a href="https://wa.me/5564996168691" target="_blank" class="lp-btn-secondary" style="padding: 0.9rem 2rem; font-size: 1rem;">Ver Demonstração</a>
                 </div>
@@ -481,27 +481,27 @@ export const LandingPage = () => {
 
         <section id="features" class="lp-section alt">
             <div class="lp-section-header">
-                <h2>Módulos Especializados</h2>
-                <p>O AutoQui se adapta ao seu modelo de negócio, seja ele vendas diretas, serviços ou envios em massa.</p>
+                <h2>Automações de E-commerce</h2>
+                <p>Conecte sua loja NuvemShop e ative as automações que mais fazem sentido para o seu negócio.</p>
             </div>
-            
+
             <div class="lp-grid-cards">
                 <div class="lp-card">
-                    <div class="lp-card-icon"><i class="fa-solid fa-shop"></i></div>
-                    <h3>Vendas Catálogo</h3>
-                    <p>A vitrine definitiva para o seu delivery ou loja online. Sincronização total com WhatsApp e gestão de pedidos centralizada.</p>
+                    <div class="lp-card-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <h3>Carrinho Abandonado</h3>
+                    <p>Recupere automaticamente os clientes que adicionaram produtos mas não finalizaram a compra.</p>
                     <a href="https://wa.me/5564996168691" target="_blank" class="lp-card-link">Solicitar Teste <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
                 <div class="lp-card">
-                    <div class="lp-card-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                    <h3>Gestão de Serviços</h3>
-                    <p>Para clínicas, barbearias ou consultorias. Agendamento inteligente que reduz faltas em até 70% com lembretes automáticos.</p>
+                    <div class="lp-card-icon"><i class="fa-solid fa-truck"></i></div>
+                    <h3>Rastreio & Pós-venda</h3>
+                    <p>Pagamento aprovado, código de rastreio e avaliação pós-compra enviados na hora certa.</p>
                     <a href="https://wa.me/5564996168691" target="_blank" class="lp-card-link">Saber mais <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
                 <div class="lp-card">
-                    <div class="lp-card-icon"><i class="fa-solid fa-bullhorn"></i></div>
-                    <h3>Campanhas Pro</h3>
-                    <p>Envio em massa com inteligência de anti-banimento. Fale com toda a sua base de leads com apenas um clique.</p>
+                    <div class="lp-card-icon"><i class="fa-solid fa-rotate"></i></div>
+                    <h3>Lembretes & Reengajamento</h3>
+                    <p>Lembre o PIX/boleto pendente e reative clientes que não compram há um tempo.</p>
                     <a href="https://wa.me/5564996168691" target="_blank" class="lp-card-link">Explorar <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
             </div>
@@ -513,11 +513,23 @@ export const LandingPage = () => {
                 <h2>Planos e Preços</h2>
                 <p>Escolha o plano ideal para o seu negócio. Sem taxas ocultas, sem contratos longos — cancele quando quiser.</p>
             </div>
-            <div id="lp-pricing-grid" class="lp-pricing-grid">
-                <!-- Preenchido dinamicamente via JS -->
-                <div class="lp-pricing-card"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
-                <div class="lp-pricing-card popular"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
-                <div class="lp-pricing-card"><div class="lp-pricing-skeleton" style="width:60%;margin-bottom:20px"></div><div class="lp-pricing-skeleton" style="width:40%"></div></div>
+            <div id="lp-pricing-grid" class="lp-pricing-grid" style="justify-content:center;">
+                <div class="lp-pricing-card popular">
+                    <span class="lp-pricing-badge">⭐ Plano Único</span>
+                    <div class="lp-pricing-name">EcoQui</div>
+                    <div class="lp-pricing-desc">Todas as automações de WhatsApp para a sua loja virtual.</div>
+                    <div class="lp-pricing-divider"></div>
+                    <ul class="lp-pricing-features">
+                        <li><i class="fa-solid fa-circle-check"></i>Integração com NuvemShop</li>
+                        <li><i class="fa-solid fa-circle-check"></i>Carrinho abandonado</li>
+                        <li><i class="fa-solid fa-circle-check"></i>Pagamento aprovado e rastreio</li>
+                        <li><i class="fa-solid fa-circle-check"></i>Lembrete de PIX/boleto</li>
+                        <li><i class="fa-solid fa-circle-check"></i>Reengajamento e avaliação pós-compra</li>
+                    </ul>
+                    <a href="https://wa.me/5564996168691?text=Olá!%20Quero%20assinar%20o%20EcoQui" target="_blank" class="lp-pricing-cta">
+                        Quero Assinar
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -526,7 +538,7 @@ export const LandingPage = () => {
                 <h2>Perguntas Frequentes</h2>
             </div>
             <div class="lp-faq-item">
-                <div class="lp-faq-question">Como funciona a implementação do AutoQui? <i class="fa-solid fa-chevron-down"></i></div>
+                <div class="lp-faq-question">Como funciona a implementação do EcoQui? <i class="fa-solid fa-chevron-down"></i></div>
                 <div class="lp-faq-answer">É instantâneo! Após criar sua conta, você vincula seu WhatsApp por QR Code e já pode configurar seus produtos e fluxos de atendimento em poucos minutos.</div>
             </div>
             <div class="lp-faq-item">
@@ -542,8 +554,8 @@ export const LandingPage = () => {
         <footer class="lp-footer">
             <div class="lp-footer-col">
                 <div class="lp-logo" style="margin-bottom: 2rem;">
-                    <img src="/logo.png" alt="AutoQui Logo">
-                    <span>AutoQui</span>
+                    <img src="/logo.png" alt="EcoQui Logo">
+                    <span>EcoQui</span>
                 </div>
                 <p style="color: var(--lp-text-dim); line-height: 1.8;">A solução número #1 para empresas que buscam excelência no atendimento digital.</p>
             </div>
@@ -579,75 +591,6 @@ export const LandingPage = () => {
     </div>
 
     <script>
-        // ── Pricing: carrega planos do backend ──────────────────
-        (function loadPricing() {
-            const WA = 'https://wa.me/5564996168691';
-            const POPULAR_ID = 'pro';
-            const ORDER = ['starter', 'pro', 'business'];
-            const DEFAULT_FEATURES = {
-                starter:  ['Atendimento IA via WhatsApp', 'Até 500 mensagens/mês', 'Catálogo de produtos', 'Suporte por e-mail'],
-                pro:      ['Tudo do Starter', 'Mensagens ilimitadas', 'Gestão de pedidos', 'Campanhas em massa', 'Suporte prioritário'],
-                business: ['Tudo do Pro', 'Multi-lojas', 'Agendamentos IA', 'Relatórios avançados', 'Gerente de conta dedicado'],
-            };
-            const DEFAULT_DESC = {
-                starter:  'Perfeito para quem está começando a automatizar o atendimento.',
-                pro:      'O mais escolhido por pequenas e médias empresas.',
-                business: 'Para negócios com alto volume e múltiplas unidades.',
-            };
-
-            function renderCard(plan, id) {
-                const isPopular = id === POPULAR_ID;
-                const features = (plan.features && plan.features.length > 0)
-                    ? plan.features
-                    : (DEFAULT_FEATURES[id] || []);
-                const desc = plan.description || DEFAULT_DESC[id] || '';
-                const price = Number(plan.price || 0);
-                const name = plan.name || id;
-
-                return \`
-                <div class="lp-pricing-card\${isPopular ? ' popular' : ''}">
-                    \${isPopular ? '<span class="lp-pricing-badge">⭐ Mais Popular</span>' : ''}
-                    <div class="lp-pricing-name">\${name}</div>
-                    <div class="lp-pricing-price">
-                        <span class="currency">R$</span>
-                        <span class="amount">\${price}</span>
-                        <span class="period">/mês</span>
-                    </div>
-                    <div class="lp-pricing-desc">\${desc}</div>
-                    <div class="lp-pricing-divider"></div>
-                    <ul class="lp-pricing-features">
-                        \${features.map(f => \`<li><i class="fa-solid fa-circle-check"></i>\${f}</li>\`).join('')}
-                    </ul>
-                    <a href="\${WA}?text=Olá!%20Quero%20contratar%20o%20plano%20\${encodeURIComponent(name)}" target="_blank" class="lp-pricing-cta">
-                        Quero o \${name}
-                    </a>
-                </div>\`;
-            }
-
-            fetch('/plans/config')
-                .then(r => r.ok ? r.json() : Promise.reject())
-                .then(({ plans }) => {
-                    const grid = document.getElementById('lp-pricing-grid');
-                    if (!grid || !plans) return;
-                    const cards = ORDER
-                        .filter(id => plans[id] && plans[id].active !== false)
-                        .map(id => renderCard(plans[id], id))
-                        .join('');
-                    grid.innerHTML = cards || grid.innerHTML;
-                })
-                .catch(() => {
-                    // fallback: valores padrão hardcoded
-                    const defaults = {
-                        starter:  { name: 'Starter',  price: 197 },
-                        pro:      { name: 'Pro',       price: 397 },
-                        business: { name: 'Business',  price: 697 },
-                    };
-                    const grid = document.getElementById('lp-pricing-grid');
-                    if (!grid) return;
-                    grid.innerHTML = ORDER.map(id => renderCard(defaults[id], id)).join('');
-                });
-        })();
-
         // FAQ Toggle
         document.querySelectorAll('.lp-faq-item').forEach(item => {
             item.addEventListener('click', () => {

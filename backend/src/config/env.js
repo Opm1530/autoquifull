@@ -26,6 +26,13 @@ export const ENV = {
   NUVEMSHOP_APP_ID:     process.env.NUVEMSHOP_APP_ID     || '',
   NUVEMSHOP_APP_SECRET: process.env.NUVEMSHOP_APP_SECRET || '',
   BACKEND_URL:          process.env.BACKEND_URL           || 'http://localhost:3001',
+
+  // Kiwify (assinatura recorrente) — preencher quando a Kiwify estiver pronta
+  KIWIFY_WEBHOOK_TOKEN: process.env.KIWIFY_WEBHOOK_TOKEN || '', // token de validação do webhook
+  KIWIFY_CHECKOUT_URL:  process.env.KIWIFY_CHECKOUT_URL  || '', // link do checkout da assinatura
+  KIWIFY_ACCOUNT_ID:    process.env.KIWIFY_ACCOUNT_ID    || '',
+  // Liga o bloqueio de acesso por assinatura. Mantenha 'false' até plugar a Kiwify.
+  KIWIFY_ENFORCE:       (process.env.KIWIFY_ENFORCE || 'false') === 'true',
 };
 
 export function validateEnv() {

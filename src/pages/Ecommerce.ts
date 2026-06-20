@@ -993,7 +993,7 @@ function renderShoppable(_companyId: string, sh: any) {
         ${field('Largura do card (px)', `<input class="ec-select" type="number" min="100" id="ec-sh-cw" value="${d.cardWidth || 172}">`)}
         ${field('Altura do card (px)', `<input class="ec-select" type="number" min="120" id="ec-sh-ch" value="${d.cardHeight || 300}">`)}
         ${field('Escala do central', `<input class="ec-select" type="number" step="0.02" min="1" id="ec-sh-scale" value="${d.centerScale || 1.18}">`)}
-        ${field('Espaçamento (px)', `<input class="ec-select" type="number" min="60" id="ec-sh-gap" value="${d.gap || 208}">`)}
+        ${field('Espaçamento entre cards (px)', `<input class="ec-select" type="number" min="0" id="ec-sh-gap" value="${d.gap && d.gap <= 100 ? d.gap : 16}">`)}
         ${field('Troca automática (s)', `<input class="ec-select" type="number" step="0.5" min="1" id="ec-sh-rot" value="${d.autoRotate || 3.6}">`)}
         ${field('Mostrar card do produto', `<label class="ec-toggle"><input type="checkbox" id="ec-sh-showcard" ${d.showProductCard !== false ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
       </div>

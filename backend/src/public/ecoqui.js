@@ -338,7 +338,7 @@
     if (document.getElementById('ecq-shop-style')) return;
     var st = document.createElement('style'); st.id = 'ecq-shop-style';
     st.textContent =
-      '@keyframes ecqPulseScale{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}'
+      '@keyframes ecqPulseScale{0%,100%{transform:scale(1);box-shadow:0 0 0 1px rgba(0,0,0,.05)}50%{transform:scale(1.06);box-shadow:0 0 0 3px rgba(0,0,0,.14)}}'
       + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;}'
       + '.ecq-st-ov{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial;}'
       + '.ecq-st-frame{position:relative;width:min(420px,94vw);height:min(86vh,760px);background:#000;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}'
@@ -355,7 +355,9 @@
     var CW = Number(design.cardWidth) > 0 ? Number(design.cardWidth) : 172;
     var CH = Number(design.cardHeight) > 0 ? Number(design.cardHeight) : 300;
     var CSCALE = Number(design.centerScale) > 0 ? Number(design.centerScale) : 1.18;
-    var GAP = Number(design.gap) > 0 ? Number(design.gap) : 208;
+    // GAP = espaçamento entre as bordas dos cards (valor legado >100 vira 16)
+    var GAP = Number(design.gap);
+    GAP = (GAP > 0 && GAP <= 100) ? GAP : 16;
     var ROT = (Number(design.autoRotate) > 0 ? Number(design.autoRotate) : 3.6) * 1000;
     var showCard = design.showProductCard !== false;
     var stageH = Math.round(CH * CSCALE) + (showCard ? 96 : 24);
@@ -377,6 +379,14 @@
       cards.push({ el: card, vid: vbox.firstChild, vbox: vbox, off: null });
     });
 
+    // Escala por distância do centro e posição cumulativa (espaçamento de borda constante)
+    function scaleFor(a) { return a === 0 ? CSCALE : a === 1 ? 0.9 : 0.76; }
+    function offsetPx(off) {
+      var a = Math.abs(off), d = 0;
+      for (var s = 1; s <= a; s++) d += CW * scaleFor(s - 1) / 2 + GAP + CW * scaleFor(s) / 2;
+      return off < 0 ? -d : d;
+    }
+
     var center = 0;
     function layout() {
       for (var i = 0; i < cards.length; i++) {
@@ -388,8 +398,8 @@
         var jumped = c.off != null && Math.abs(off - c.off) > 2;
         c.el.style.transition = jumped ? 'none' : 'transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s';
         c.off = off;
-        var scale = off === 0 ? CSCALE : (abs === 1 ? 0.9 : 0.76);
-        c.el.style.transform = 'translateX(calc(-50% + ' + (off * GAP) + 'px)) scale(' + scale + ')';
+        var scale = scaleFor(abs);
+        c.el.style.transform = 'translateX(calc(-50% + ' + offsetPx(off) + 'px)) scale(' + scale + ')';
         c.el.style.opacity = abs > 2 ? '0' : '1';
         c.el.style.zIndex = String(100 - abs);
         c.el.style.pointerEvents = abs > 2 ? 'none' : 'auto';

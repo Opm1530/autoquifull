@@ -370,7 +370,7 @@
     var nlen = list.length, cards = [];
     list.forEach(function (item, i) {
       var card = el('div', 'position:absolute;top:8px;left:50%;width:' + CW + 'px;cursor:pointer;will-change:transform,opacity;');
-      var delay = (i * 0.15).toFixed(2);
+      var delay = '0';
       // wrapper interno: vídeo + card do produto pulsam juntos (scale), só o vídeo ganha a borda
       var inner = el('div');
       inner.style.animation = 'ecqScale 1.8s ease-in-out ' + delay + 's infinite';

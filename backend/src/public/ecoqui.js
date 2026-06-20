@@ -67,53 +67,100 @@
   // ═══════════════════════════════════════════════════════════
   // ROLETA DE DESCONTO (vitrine)
   // ═══════════════════════════════════════════════════════════
+  function ensureRouletteStyle() {
+    if (document.getElementById('ecq-rl-style')) return;
+    var st = document.createElement('style'); st.id = 'ecq-rl-style';
+    st.textContent =
+      '.ecq-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(15,15,25,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}'
+      + '.ecq-card{position:relative;width:100%;max-width:360px;background:#fff;border-radius:22px;padding:26px 22px 24px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.4);animation:ecqPop .35s cubic-bezier(.2,.9,.3,1.3);}'
+      + '@keyframes ecqPop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}'
+      + '.ecq-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;background:#f1f1f4;color:#888;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:0;line-height:1;}'
+      + '.ecq-x:hover{background:#e5e5ea;}'
+      + '.ecq-title{margin:0 0 4px;font-size:21px;font-weight:800;color:#16161a;}'
+      + '.ecq-sub{margin:0 0 16px;font-size:13px;color:#6b6b76;}'
+      + '.ecq-rim{position:relative;margin:0 auto 18px;border-radius:50%;background:var(--ecq);padding:9px;box-shadow:0 10px 30px rgba(0,0,0,.22);}'
+      + '.ecq-rim:before{content:"";position:absolute;inset:5px;border-radius:50%;border:3px dashed rgba(255,255,255,.6);pointer-events:none;z-index:3;}'
+      + '.ecq-disc{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4.6s cubic-bezier(.13,.7,.2,1);}'
+      + '.ecq-hub{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:4;}'
+      + '.ecq-ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:5;width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid #16161a;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}'
+      + '.ecq-lab{position:absolute;left:50%;top:50%;color:#fff;font-weight:800;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.4);white-space:nowrap;}'
+      + '.ecq-inp{width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1.5px solid #e3e3ea;border-radius:12px;font-size:14px;outline:none;transition:border-color .2s;}'
+      + '.ecq-inp:focus{border-color:var(--ecq);}'
+      + '.ecq-btn{width:100%;padding:14px;border:0;border-radius:14px;background:var(--ecq);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.18);transition:transform .15s,opacity .2s;margin-top:6px;letter-spacing:.3px;}'
+      + '.ecq-btn:hover{transform:translateY(-1px);}.ecq-btn:disabled{opacity:.6;transform:none;cursor:default;}'
+      + '.ecq-err{min-height:16px;font-size:12.5px;color:#e23b3b;margin:6px 0 0;font-weight:600;}'
+      + '.ecq-code{font-size:26px;font-weight:900;letter-spacing:3px;color:var(--ecq);background:#f6f6fb;border:2px dashed var(--ecq);border-radius:12px;padding:12px;margin:10px 0 14px;}'
+      + '.ecq-launch{position:fixed;left:18px;bottom:18px;z-index:2147482000;background:var(--ecq);color:#fff;border-radius:50px;padding:12px 18px 12px 15px;font-family:system-ui,Arial;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;animation:ecqPulse 2.2s infinite;}'
+      + '.ecq-launch:hover{filter:brightness(1.05);}'
+      + '@keyframes ecqPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}'
+      + '@keyframes ecqFall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}';
+    document.head.appendChild(st);
+  }
+
+  function ecqConfetti(theme) {
+    var colors = ['#FFD166', '#06D6A0', '#EF476F', '#118AB2', '#FF8FAB', theme];
+    for (var i = 0; i < 70; i++) {
+      var c = document.createElement('div');
+      var sz = 6 + Math.random() * 9;
+      c.style.cssText = 'position:fixed;top:-24px;left:' + (Math.random() * 100) + 'vw;width:' + sz + 'px;height:' + (sz * 0.55) + 'px;background:' + colors[Math.floor(Math.random() * colors.length)] + ';z-index:2147483600;border-radius:2px;opacity:.95;pointer-events:none;animation:ecqFall ' + (2.6 + Math.random() * 2.2) + 's linear ' + (Math.random() * 0.5) + 's forwards;';
+      document.body.appendChild(c);
+      (function (node) { setTimeout(function () { node.remove(); }, 6200); })(c);
+    }
+  }
+
   function initRoulette(r) {
+    ensureRouletteStyle();
     var SEEN = 'ecoqui_roleta_' + STORE_ID;
     var theme = r.theme || '#6366f1';
+    document.documentElement.style.setProperty('--ecq', theme);
     var slices = r.slices.map(function (s) { return s.label || '—'; });
+    var n = slices.length;
+    var seg = 360 / n;
+    var size = Math.round(Math.min(290, (window.innerWidth || 360) * 0.78));
+    var radius = size * 0.30;
+    var fs = Math.max(10, Math.round(size * 0.046));
 
-    var overlay = el('div', 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;font-family:system-ui,Arial,sans-serif;');
-    var card = el('div', 'background:#fff;border-radius:18px;max-width:360px;width:92%;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);position:relative;');
+    var overlay = el('div'); overlay.className = 'ecq-ov';
+    var card = el('div'); card.className = 'ecq-card';
     overlay.appendChild(card);
 
-    var close = el('div', 'position:absolute;top:10px;right:14px;cursor:pointer;font-size:22px;color:#999;', '&times;');
+    var close = el('button', '', '&times;'); close.className = 'ecq-x';
     close.onclick = function () { overlay.style.display = 'none'; };
-    card.appendChild(close);
 
-    card.appendChild(el('h3', 'margin:0 0 4px;font-size:20px;color:#111;', r.title || 'Gire e ganhe!'));
-    card.appendChild(el('p', 'margin:0 0 16px;font-size:13px;color:#666;', 'Preencha e gire a roleta para ganhar um desconto.'));
+    var title = el('h3', '', escapeHtml(r.title || 'Gire e ganhe!')); title.className = 'ecq-title';
+    var sub = el('p', '', 'Preencha e gire para ganhar seu prêmio.'); sub.className = 'ecq-sub';
 
-    // Roda (conic-gradient + ponteiro)
-    var size = 240, n = slices.length;
+    // Roda
     var colors = [];
-    for (var i = 0; i < n; i++) colors.push(i % 2 ? shade(theme, 18) : theme);
-    var seg = 360 / n, grad = [];
+    for (var i = 0; i < n; i++) colors.push(i % 2 ? shade(theme, 22) : theme);
+    var grad = [];
     for (var j = 0; j < n; j++) grad.push(colors[j] + ' ' + (seg * j) + 'deg ' + (seg * (j + 1)) + 'deg');
-    var wheelWrap = el('div', 'position:relative;width:' + size + 'px;height:' + size + 'px;margin:0 auto 14px;');
-    var wheel = el('div', 'width:100%;height:100%;border-radius:50%;border:6px solid ' + theme + ';background:conic-gradient(' + grad.join(',') + ');transition:transform 4s cubic-bezier(.17,.67,.32,1.34);');
-    // Rótulos
-    for (var k = 0; k < n; k++) {
-      var ang = seg * k + seg / 2;
-      var lab = el('div', 'position:absolute;left:50%;top:50%;transform-origin:0 0;transform:rotate(' + ang + 'deg) translate(' + (size / 2 - 64) + 'px,-8px);width:60px;font-size:10px;font-weight:700;color:#fff;text-align:right;pointer-events:none;', escapeHtml(slices[k]));
-      wheel.appendChild(lab);
-    }
-    var pointer = el('div', 'position:absolute;top:-6px;left:50%;transform:translateX(-50%);border-left:11px solid transparent;border-right:11px solid transparent;border-top:18px solid #111;z-index:2;');
-    wheelWrap.appendChild(wheel); wheelWrap.appendChild(pointer);
-    card.appendChild(wheelWrap);
 
-    // Form de captura
-    var form = el('div', '');
+    var rim = el('div'); rim.className = 'ecq-rim'; rim.style.width = size + 'px'; rim.style.height = size + 'px';
+    var disc = el('div'); disc.className = 'ecq-disc'; disc.style.background = 'conic-gradient(' + grad.join(',') + ')';
+    for (var k = 0; k < n; k++) {
+      var mid = seg * k + seg / 2;
+      var lab = el('div', '', escapeHtml(slices[k])); lab.className = 'ecq-lab';
+      lab.style.fontSize = fs + 'px';
+      lab.style.transform = 'translate(-50%,-50%) rotate(' + mid + 'deg) translateY(-' + radius + 'px)';
+      disc.appendChild(lab);
+    }
+    var hub = el('div', '', '🎁'); hub.className = 'ecq-hub';
+    var ptr = el('div'); ptr.className = 'ecq-ptr';
+    rim.appendChild(disc); rim.appendChild(hub); rim.appendChild(ptr);
+
+    // Form
+    var form = el('div');
     var inputs = {};
     var fields = (r.capture && r.capture.length) ? r.capture : ['email'];
     if (fields.indexOf('email') !== -1) inputs.email = addInput(form, 'email', 'Seu melhor e-mail');
     if (fields.indexOf('phone') !== -1) inputs.phone = addInput(form, 'tel', 'Seu WhatsApp (DDD + número)');
-    card.appendChild(form);
 
-    var msg = el('div', 'min-height:18px;font-size:12px;color:#c0392b;margin:6px 0;');
-    card.appendChild(msg);
+    var msg = el('div'); msg.className = 'ecq-err';
+    var btn = el('button', '', 'GIRAR 🎉'); btn.className = 'ecq-btn';
 
-    var btn = el('button', 'width:100%;padding:13px;border:0;border-radius:10px;background:' + theme + ';color:#fff;font-size:15px;font-weight:800;cursor:pointer;', 'GIRAR 🎉');
-    card.appendChild(btn);
+    card.appendChild(close); card.appendChild(title); card.appendChild(sub);
+    card.appendChild(rim); card.appendChild(form); card.appendChild(msg); card.appendChild(btn);
 
     var spinning = false;
     btn.onclick = function () {
@@ -122,38 +169,46 @@
       var phone = inputs.phone ? inputs.phone.value.trim() : '';
       if (inputs.email && !/.+@.+\..+/.test(email)) { msg.textContent = 'Informe um e-mail válido.'; return; }
       if (inputs.phone && phone.replace(/\D/g, '').length < 10) { msg.textContent = 'Informe um WhatsApp válido.'; return; }
-      msg.textContent = ''; spinning = true; btn.disabled = true; btn.style.opacity = '.6';
+      msg.textContent = ''; spinning = true; btn.disabled = true; btn.textContent = 'Girando...';
 
       api('/storefront/roulette/claim', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storeId: STORE_ID, email: email, phone: phone })
       }).then(function (res) {
-        if (res.error) { msg.textContent = res.error; spinning = false; btn.disabled = false; btn.style.opacity = '1'; return; }
+        if (res.error) { msg.textContent = res.error; spinning = false; btn.disabled = false; btn.textContent = 'GIRAR 🎉'; return; }
         var idx = Math.max(0, slices.indexOf(res.prizeLabel));
         var target = 360 * 5 + (360 - (seg * idx + seg / 2)); // ponteiro no topo
-        wheel.style.transform = 'rotate(' + target + 'deg)';
+        disc.style.transform = 'rotate(' + target + 'deg)';
         try { localStorage.setItem(SEEN, '1'); } catch (e) {}
         setTimeout(function () {
           if (res.won) {
-            card.innerHTML = '<h3 style="margin:0 0 8px;color:#111;font-size:20px;">🎉 Você ganhou!</h3>'
-              + '<p style="color:#666;font-size:14px;margin:0 0 12px;">' + escapeHtml(res.prizeLabel) + '</p>'
-              + '<div style="font-size:13px;color:#666;">Use o cupom:</div>'
-              + '<div style="font-size:26px;font-weight:800;letter-spacing:2px;color:' + theme + ';margin:6px 0 14px;">' + escapeHtml(res.code) + '</div>'
-              + '<button id="ecq-copy" style="width:100%;padding:12px;border:0;border-radius:10px;background:' + theme + ';color:#fff;font-weight:800;cursor:pointer;">Copiar cupom</button>';
+            ecqConfetti(theme);
+            card.innerHTML = '<button class="ecq-x">&times;</button>'
+              + '<div style="font-size:42px;line-height:1;margin:6px 0 2px;">🎉</div>'
+              + '<h3 class="ecq-title">Você ganhou!</h3>'
+              + '<p class="ecq-sub" style="margin-bottom:8px;">' + escapeHtml(res.prizeLabel) + '</p>'
+              + '<div style="font-size:12.5px;color:#6b6b76;">Use o cupom no checkout:</div>'
+              + '<div class="ecq-code">' + escapeHtml(res.code) + '</div>'
+              + '<button class="ecq-btn" id="ecq-copy">Copiar cupom</button>';
+            card.querySelector('.ecq-x').onclick = function () { overlay.style.display = 'none'; };
             var cp = card.querySelector('#ecq-copy');
-            cp.onclick = function () { try { navigator.clipboard.writeText(res.code); cp.textContent = 'Copiado!'; } catch (e) {} };
+            cp.onclick = function () { try { navigator.clipboard.writeText(res.code); cp.textContent = 'Copiado! ✓'; } catch (e) {} };
           } else {
-            card.innerHTML = '<h3 style="margin:0 0 8px;color:#111;">' + escapeHtml(res.prizeLabel || 'Não foi dessa vez') + '</h3>'
-              + '<p style="color:#666;font-size:14px;">Fique de olho nas próximas promoções! 💜</p>';
+            card.innerHTML = '<button class="ecq-x">&times;</button>'
+              + '<div style="font-size:40px;line-height:1;margin:6px 0 2px;">😕</div>'
+              + '<h3 class="ecq-title">' + escapeHtml(res.prizeLabel || 'Não foi dessa vez') + '</h3>'
+              + '<p class="ecq-sub">Fique de olho nas próximas promoções! 💜</p>';
+            card.querySelector('.ecq-x').onclick = function () { overlay.style.display = 'none'; };
           }
-        }, 4200);
-      }).catch(function () { msg.textContent = 'Erro de conexão. Tente novamente.'; spinning = false; btn.disabled = false; btn.style.opacity = '1'; });
+        }, 4800);
+      }).catch(function () { msg.textContent = 'Erro de conexão. Tente novamente.'; spinning = false; btn.disabled = false; btn.textContent = 'GIRAR 🎉'; });
     };
 
     document.body.appendChild(overlay);
 
     // Launcher flutuante + auto-abre 1x por sessão
-    var launcher = el('div', 'position:fixed;left:18px;bottom:18px;z-index:2147482000;background:' + theme + ';color:#fff;border-radius:50px;padding:12px 18px;font-family:system-ui,Arial;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25);', '🎁 Ganhe desconto');
+    var launcher = el('div'); launcher.className = 'ecq-launch';
+    launcher.innerHTML = '🎁 <span>Ganhe desconto</span>';
     launcher.onclick = function () { overlay.style.display = 'flex'; };
     document.body.appendChild(launcher);
 
@@ -164,8 +219,7 @@
 
   function addInput(parent, type, ph) {
     var i = el('input');
-    i.type = type; i.placeholder = ph;
-    i.style.cssText = 'width:100%;box-sizing:border-box;padding:11px;margin:5px 0;border:1px solid #ddd;border-radius:9px;font-size:14px;';
+    i.type = type; i.placeholder = ph; i.className = 'ecq-inp';
     parent.appendChild(i);
     return i;
   }

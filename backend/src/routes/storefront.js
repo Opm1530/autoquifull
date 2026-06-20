@@ -106,6 +106,7 @@ router.get('/config/:storeId', async (req, res) => {
       },
       videos:    cfg.videos    || { enabled: false, items: [] },
       shoppable: cfg.shoppable || { enabled: false, items: [] },
+      reward:    cfg.reward    || { enabled: false },
       checkout:  cfg.checkout  || { enabled: false },
     });
   } catch (err) {

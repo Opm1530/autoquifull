@@ -496,6 +496,9 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
       <button class="ec-tab" data-tab="shoppable" onclick="window.ecSwitchTab('shoppable')">
         <i class="fa-solid fa-clapperboard"></i> Shoppable
       </button>
+      <button class="ec-tab" data-tab="reward" onclick="window.ecSwitchTab('reward')">
+        <i class="fa-solid fa-gift"></i> Brinde
+      </button>
       <button class="ec-tab" data-tab="checkout" onclick="window.ecSwitchTab('checkout')">
         <i class="fa-solid fa-cart-shopping"></i> Checkout
       </button>
@@ -513,6 +516,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
     <div id="ec-tab-roulette" style="display:none;"></div>
     <div id="ec-tab-videos" style="display:none;"></div>
     <div id="ec-tab-shoppable" style="display:none;"></div>
+    <div id="ec-tab-reward" style="display:none;"></div>
     <div id="ec-tab-checkout" style="display:none;"></div>
     <div id="ec-tab-history" style="display:none;"></div>
   `;
@@ -523,7 +527,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   (window as any).ecSwitchTab = (tab: string) => {
     document.querySelectorAll('.ec-tab').forEach((el) => el.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-    ['automations', 'roulette', 'videos', 'shoppable', 'checkout', 'history'].forEach((t) => {
+    ['automations', 'roulette', 'videos', 'shoppable', 'reward', 'checkout', 'history'].forEach((t) => {
       const el = document.getElementById(`ec-tab-${t}`);
       if (el) el.style.display = t === tab ? '' : 'none';
     });
@@ -795,6 +799,7 @@ async function loadStorefront(companyId: string) {
   renderRoulette(companyId, cfg.roulette || {});
   renderVideos(companyId, cfg.videos || {});
   renderShoppable(companyId, cfg.shoppable || {});
+  renderReward(companyId, cfg.reward || {});
   renderCheckout(companyId, cfg.checkout || {});
 
   (window as any).ecSaveStorefront = async (section: string) => {
@@ -804,6 +809,7 @@ async function loadStorefront(companyId: string) {
     if (section === 'roulette')  body.roulette  = collectRoulette();
     if (section === 'videos')    body.videos    = collectVideos();
     if (section === 'shoppable') body.shoppable = collectShoppable();
+    if (section === 'reward')    body.reward    = collectReward();
     if (section === 'checkout')  body.checkout  = collectCheckout();
     try {
       await fetch(`/ecommerce/storefront/${companyId}`, {
@@ -1088,6 +1094,43 @@ function openProductPicker(row: HTMLElement) {
   let t: any;
   search.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => doSearch(search.value.trim()), 350); });
   doSearch('');
+}
+
+// ── Brinde / Barra de recompensa no carrinho ──
+function renderReward(_companyId: string, r: any) {
+  const c = document.getElementById('ec-tab-reward');
+  if (!c) return;
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      ${field('Ativar barra de recompensa', `<label class="ec-toggle"><input type="checkbox" id="ec-rw-enabled" ${r.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      <div class="ec-auto-grid" style="margin-top:1rem;">
+        ${field('Valor do carrinho para ganhar (R$)', `<input class="ec-select" type="number" min="0" step="0.01" id="ec-rw-threshold" value="${r.threshold || 0}">`)}
+        ${field('Nome da recompensa', `<input class="ec-select" id="ec-rw-label" value="${(r.rewardLabel || 'Frete grátis').replace(/"/g, '&quot;')}">`)}
+        ${field('Cupom revelado ao atingir (opcional)', `<input class="ec-select" id="ec-rw-coupon" placeholder="Ex: FRETEGRATIS" value="${(r.couponCode || '').replace(/"/g, '&quot;')}">`)}
+        ${field('Cor da barra', `<input class="ec-select" type="color" id="ec-rw-color" value="${r.color || '#10b981'}">`)}
+        ${field('Posição', `<select class="ec-select" id="ec-rw-position">
+          <option value="top" ${(r.position || 'top') === 'top' ? 'selected' : ''}>Topo</option>
+          <option value="bottom" ${r.position === 'bottom' ? 'selected' : ''}>Rodapé</option>
+        </select>`)}
+      </div>
+      ${field('Mensagem (faltando)', `<input class="ec-select" id="ec-rw-before" value="${(r.msgBefore || 'Faltam {{falta}} para ganhar {{recompensa}}! 🎁').replace(/"/g, '&quot;')}">`)}
+      ${field('Mensagem (atingiu)', `<input class="ec-select" id="ec-rw-reached" value="${(r.msgReached || '🎉 Você desbloqueou {{recompensa}}!').replace(/"/g, '&quot;')}">`)}
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Use <code>{{falta}}</code> (valor que falta) e <code>{{recompensa}}</code> (nome da recompensa) nas mensagens. Crie o cupom na NuvemShop e coloque o código aqui para ser revelado.</p>
+      <div style="margin-top:1.25rem;">${saveBtn('reward')}</div>
+    </div>`;
+}
+
+function collectReward() {
+  return {
+    enabled: (document.getElementById('ec-rw-enabled') as HTMLInputElement)?.checked || false,
+    threshold: parseFloat((document.getElementById('ec-rw-threshold') as HTMLInputElement)?.value || '0'),
+    rewardLabel: (document.getElementById('ec-rw-label') as HTMLInputElement)?.value || 'Frete grátis',
+    couponCode: (document.getElementById('ec-rw-coupon') as HTMLInputElement)?.value?.trim() || '',
+    color: (document.getElementById('ec-rw-color') as HTMLInputElement)?.value || '#10b981',
+    position: (document.getElementById('ec-rw-position') as HTMLSelectElement)?.value || 'top',
+    msgBefore: (document.getElementById('ec-rw-before') as HTMLInputElement)?.value || '',
+    msgReached: (document.getElementById('ec-rw-reached') as HTMLInputElement)?.value || '',
+  };
 }
 
 // ── Checkout ──

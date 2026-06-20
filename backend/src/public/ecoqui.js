@@ -56,6 +56,7 @@
       } else {
         if (cfg.videos && cfg.videos.enabled) initVideos(cfg.videos);
         if (cfg.shoppable && cfg.shoppable.enabled && cfg.shoppable.items && cfg.shoppable.items.length) initShoppable(cfg.shoppable);
+        if (cfg.reward && cfg.reward.enabled && Number(cfg.reward.threshold) > 0) initReward(cfg.reward);
         if (cfg.roulette && cfg.roulette.enabled && cfg.roulette.slices && cfg.roulette.slices.length) {
           initRoulette(cfg.roulette);
         }
@@ -314,6 +315,70 @@
     box.appendChild(bubble);
     box.appendChild(close);
     document.body.appendChild(box);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BRINDE / BARRA DE RECOMPENSA NO CARRINHO
+  // ═══════════════════════════════════════════════════════════
+  function brl(n) { return 'R$ ' + (Number(n) || 0).toFixed(2).replace('.', ','); }
+
+  function readCartSubtotal() {
+    try { if (window.LS && window.LS.cart && window.LS.cart.subtotal != null) return Number(window.LS.cart.subtotal) / 100; } catch (e) {}
+    var node = document.querySelector('.js-cart-subtotal, [data-cart-subtotal]');
+    if (node) {
+      var dp = node.getAttribute('data-price');
+      if (dp != null && dp !== '') { var c = Number(dp); if (!isNaN(c)) return c / 100; }
+      var t = (node.textContent || '').replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.');
+      var n = parseFloat(t); if (!isNaN(n)) return n;
+    }
+    return null;
+  }
+
+  function initReward(r) {
+    var threshold = Number(r.threshold) || 0;
+    var color = r.color || '#10b981';
+    var atBottom = r.position === 'bottom';
+
+    var bar = el('div', 'position:fixed;left:0;right:0;' + (atBottom ? 'bottom:0;' : 'top:0;') +
+      'z-index:2147481800;background:' + color + ';color:#fff;font-family:system-ui,Arial;font-size:13px;' +
+      'padding:8px 14px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.15);display:none;');
+    var msg = el('div', 'font-weight:700;margin-bottom:5px;');
+    var track = el('div', 'height:6px;border-radius:6px;background:rgba(255,255,255,.35);max-width:420px;margin:0 auto;overflow:hidden;');
+    var fill = el('div', 'height:100%;width:0%;background:#fff;border-radius:6px;transition:width .4s;');
+    track.appendChild(fill);
+    bar.appendChild(msg); bar.appendChild(track);
+    document.body.appendChild(bar);
+
+    function render() {
+      var subtotal = readCartSubtotal();
+      if (subtotal == null || subtotal <= 0) { bar.style.display = 'none'; return; }
+      bar.style.display = 'block';
+      if (subtotal >= threshold) {
+        var reached = (r.msgReached || '🎉 Você desbloqueou {{recompensa}}!').replace(/\{\{recompensa\}\}/g, escapeHtml(r.rewardLabel || ''));
+        msg.innerHTML = reached + (r.couponCode ? ' <strong style="text-decoration:underline;cursor:pointer;" title="Copiar">' + escapeHtml(r.couponCode) + '</strong>' : '');
+        fill.style.width = '100%';
+        if (r.couponCode) {
+          var strong = msg.querySelector('strong');
+          if (strong) strong.onclick = function () { try { navigator.clipboard.writeText(r.couponCode); strong.textContent = 'Copiado!'; } catch (e) {} };
+        }
+      } else {
+        var falta = threshold - subtotal;
+        msg.innerHTML = (r.msgBefore || 'Faltam {{falta}} para ganhar {{recompensa}}! 🎁')
+          .replace(/\{\{falta\}\}/g, '<strong>' + brl(falta) + '</strong>')
+          .replace(/\{\{recompensa\}\}/g, '<strong>' + escapeHtml(r.rewardLabel || '') + '</strong>');
+        fill.style.width = Math.max(4, Math.min(100, (subtotal / threshold) * 100)) + '%';
+      }
+    }
+
+    render();
+    // Reage a mudanças no carrinho: observa o subtotal do tema + poll de segurança
+    try {
+      var node = document.querySelector('.js-cart-subtotal, [data-cart-subtotal]');
+      if (node && window.MutationObserver) {
+        new MutationObserver(render).observe(node, { childList: true, characterData: true, subtree: true, attributes: true });
+      }
+    } catch (e) {}
+    setInterval(render, 2500);
   }
 
   // ═══════════════════════════════════════════════════════════

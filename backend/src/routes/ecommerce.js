@@ -584,6 +584,109 @@ router.get('/analytics/:companyId', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// CRM leve (segmentação RFM + score de engajamento + risco de churn)
+// ─────────────────────────────────────────────────────────────
+
+const SEGMENTS = {
+  campeao:   'Campeões',
+  fiel:      'Fiéis',
+  novo:      'Novos',
+  risco:     'Em risco',
+  perdido:   'Perdidos',
+  ocasional: 'Ocasionais',
+};
+
+function computeCRM(orders) {
+  const paid = orders.filter((o) => o.payment_status === 'paid' && o.status !== 'cancelled');
+  const now = Date.now();
+  const byCust = {};
+
+  for (const o of paid) {
+    const cust = o.customer || {};
+    const cid = cust.id ? String(cust.id) : (cust.email || `anon_${o.id}`);
+    const c = byCust[cid] || (byCust[cid] = { id: cid, name: cust.name || 'Cliente', email: cust.email || '', phone: cust.phone || '', orders: 0, total: 0, last: 0 });
+    c.orders += 1;
+    c.total += parseFloat(o.total || 0) || 0;
+    if (cust.phone && !c.phone) c.phone = cust.phone;
+    const t = o.created_at ? Date.parse(o.created_at) : 0;
+    if (t > c.last) c.last = t;
+  }
+
+  const list = Object.values(byCust);
+  const maxTotal = list.reduce((m, c) => Math.max(m, c.total), 0) || 1;
+
+  const segCounts = {};
+  for (const c of list) {
+    c.recencyDays = c.last ? Math.floor((now - c.last) / 86400000) : 999;
+    const r = c.recencyDays;
+
+    const recScore = r <= 30 ? 100 : r <= 60 ? 80 : r <= 90 ? 60 : r <= 180 ? 40 : r <= 365 ? 20 : 5;
+    const freqScore = Math.min(100, c.orders * 22);
+    const monScore = Math.round((c.total / maxTotal) * 100);
+    c.score = Math.round(recScore * 0.4 + freqScore * 0.3 + monScore * 0.3);
+    c.risk = r > 120 ? 'alto' : r > 60 ? 'medio' : 'baixo';
+
+    if (c.orders >= 3 && r <= 60) c.segment = 'campeao';
+    else if (c.orders >= 2 && r <= 90) c.segment = 'fiel';
+    else if (c.orders === 1 && r <= 30) c.segment = 'novo';
+    else if (r > 180) c.segment = 'perdido';
+    else if (r > 90) c.segment = 'risco';
+    else c.segment = 'ocasional';
+
+    segCounts[c.segment] = segCounts[c.segment] || { count: 0, revenue: 0 };
+    segCounts[c.segment].count += 1;
+    segCounts[c.segment].revenue += c.total;
+  }
+
+  const segments = Object.keys(SEGMENTS).map((k) => ({
+    key: k, label: SEGMENTS[k],
+    count: segCounts[k]?.count || 0,
+    revenue: segCounts[k]?.revenue || 0,
+  }));
+
+  list.sort((a, b) => b.total - a.total);
+
+  return {
+    totalCustomers: list.length,
+    segments,
+    customers: list.slice(0, 500).map((c) => ({
+      name: c.name, email: c.email, phone: c.phone,
+      orders: c.orders, total: c.total, recencyDays: c.recencyDays,
+      score: c.score, risk: c.risk, segment: c.segment,
+    })),
+  };
+}
+
+router.get('/crm/:companyId', async (req, res) => {
+  try {
+    const integration = await getIntegration(req.params.companyId);
+    if (!integration) return res.json({ connected: false });
+
+    const days = Math.min(Math.max(parseInt(req.query.days || '365', 10), 30), 365);
+    const db = getDb();
+    const ref = db.collection('ecommerce_crm').doc(req.params.companyId);
+    const snap = await ref.get();
+    const cache = snap.exists ? snap.data() : {};
+    const key = `d${days}`;
+
+    const cachedAt = cache[key]?.computedAt?.toMillis?.() || 0;
+    if (cache[key] && Date.now() - cachedAt < 30 * 60 * 1000) {
+      return res.json({ connected: true, cached: true, days, ...cache[key].data });
+    }
+
+    const sinceISO = new Date(Date.now() - days * 86400000).toISOString();
+    const orders = await listOrders(integration.storeId, integration.accessToken, { sinceISO });
+    const data = computeCRM(orders);
+
+    await ref.set({ [key]: { data, computedAt: new Date() } }, { merge: true });
+    res.json({ connected: true, cached: false, days, ...data });
+  } catch (err) {
+    log.error('Ecommerce', `crm: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // Webhook da NuvemShop — recebe eventos de pedidos
 // ─────────────────────────────────────────────────────────────
 

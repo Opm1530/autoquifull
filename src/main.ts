@@ -31,6 +31,7 @@ import type { UserRole } from './services/auth';
 import { Webhooks } from './pages/Webhooks';
 import { Ecommerce, initEcommerce } from './pages/Ecommerce';
 import { Analytics, initAnalytics } from './pages/Analytics';
+import { CRM, initCRM } from './pages/CRM';
 import { QRPage } from './pages/QRPage';
 import { LandingPage } from './pages/LandingPage';
 import { BackendLogs } from './pages/BackendLogs';
@@ -212,6 +213,7 @@ class App {
         // Run page-specific init after DOM is set
         if (effectivePath === '/ecommerce') initEcommerce();
         if (effectivePath === '/analytics') initAnalytics();
+        if (effectivePath === '/crm') initCRM();
     } catch (e) {
         console.error('Error loading page content:', e);
         const pageContainer = document.getElementById('page-content');
@@ -250,6 +252,7 @@ class App {
       case '/instances': return 'Instâncias';
       case '/configuration': return 'Configurações';
       case '/analytics': return 'Analytics';
+      case '/crm': return 'CRM';
       case '/subscription': return 'Assinatura';
       case '/admin/webhooks': return 'Configuração do Backend';
       case '/admin/subscriptions': return 'Assinaturas';
@@ -280,6 +283,8 @@ class App {
         return Configuration();
       case '/analytics':
         return await Analytics();
+      case '/crm':
+        return await CRM();
       case '/subscription':
         return await Subscription();
       case '/admin/subscriptions':

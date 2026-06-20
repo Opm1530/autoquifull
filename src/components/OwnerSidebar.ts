@@ -22,6 +22,10 @@ export const OwnerSidebar = () => {
                     <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
                     <span class="nav-label">Analytics</span>
                 </a>
+                <a href="/crm" class="nav-item" data-label="CRM">
+                    <span class="nav-icon"><i class="fa-solid fa-address-book"></i></span>
+                    <span class="nav-label">CRM</span>
+                </a>
 
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Configurações</span>

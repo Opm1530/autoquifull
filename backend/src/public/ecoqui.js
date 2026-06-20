@@ -329,22 +329,135 @@
     return a;
   }
 
+  function ensureShopStyle() {
+    if (document.getElementById('ecq-shop-style')) return;
+    var st = document.createElement('style'); st.id = 'ecq-shop-style';
+    st.textContent =
+      '@keyframes ecqPulseBall{0%,100%{box-shadow:0 12px 30px rgba(0,0,0,.2)}50%{box-shadow:0 14px 44px rgba(0,0,0,.42)}}'
+      + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 12px 30px rgba(0,0,0,.2);}'
+      + '.ecq-st-ov{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial;}'
+      + '.ecq-st-frame{position:relative;width:min(420px,94vw);height:min(86vh,760px);background:#000;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}'
+      + '.ecq-st-btn{position:absolute;top:12px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;font-size:15px;}'
+      + '.ecq-st-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483210;font-size:24px;line-height:1;}'
+      + '.ecq-st-prod{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);border-radius:12px;padding:10px;text-decoration:none;color:#111;z-index:6;}';
+    document.head.appendChild(st);
+  }
+
+  // Coverflow: item central maior, auto-rotaciona, autoplay mudo no centro
   function renderCarousel(list) {
-    var wrap = el('div', 'width:100%;box-sizing:border-box;padding:14px 10px;');
-    var track = el('div', 'display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:6px;');
-    list.forEach(function (item) {
-      var card = el('div', 'flex:0 0 auto;width:170px;scroll-snap-align:start;');
-      var vbox = el('div', 'width:170px;height:280px;border-radius:12px;overflow:hidden;background:#000;cursor:pointer;');
-      vbox.appendChild(miniVideo(item.url));
-      if (item.productUrl) vbox.onclick = function () { window.open(item.productUrl, '_blank'); };
+    ensureShopStyle();
+    var wrap = el('div', 'width:100%;box-sizing:border-box;padding:26px 0;display:flex;justify-content:center;overflow:hidden;');
+    var stage = el('div', 'position:relative;width:100%;max-width:1000px;height:440px;');
+    wrap.appendChild(stage);
+
+    var nlen = list.length, GAP = 208, cards = [];
+    list.forEach(function (item, i) {
+      var card = el('div', 'position:absolute;top:8px;left:50%;width:172px;cursor:pointer;will-change:transform,opacity;');
+      var vbox = el('div'); vbox.className = 'ecq-cf-vbox';
+      var vid = miniVideo(item.url);
+      vbox.appendChild(vid);
       card.appendChild(vbox);
       card.appendChild(productCard(item));
-      track.appendChild(card);
+      card.onclick = function () { openStory(list, i); };
+      stage.appendChild(card);
+      cards.push({ el: card, vid: vid, vbox: vbox, off: null });
     });
-    wrap.appendChild(track);
+
+    var center = 0;
+    function layout() {
+      for (var i = 0; i < cards.length; i++) {
+        var off = i - center;
+        if (off > nlen / 2) off -= nlen;
+        if (off < -nlen / 2) off += nlen;
+        var c = cards[i];
+        var abs = Math.abs(off);
+        var jumped = c.off != null && Math.abs(off - c.off) > 2;
+        c.el.style.transition = jumped ? 'none' : 'transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s';
+        c.off = off;
+        var scale = off === 0 ? 1.18 : (abs === 1 ? 0.9 : 0.76);
+        c.el.style.transform = 'translateX(calc(-50% + ' + (off * GAP) + 'px)) scale(' + scale + ')';
+        c.el.style.opacity = abs > 2 ? '0' : '1';
+        c.el.style.zIndex = String(100 - abs);
+        c.el.style.pointerEvents = abs > 2 ? 'none' : 'auto';
+        c.vbox.style.animation = off === 0 ? 'ecqPulseBall 1.9s infinite' : 'none';
+        try { if (c.vid.tagName === 'VIDEO') { if (off === 0) { c.vid.muted = true; c.vid.play(); } else { c.vid.pause(); } } } catch (e) {}
+      }
+    }
+    layout();
+
+    var timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, 3600);
+    stage.addEventListener('mouseenter', function () { clearInterval(timer); });
+    stage.addEventListener('mouseleave', function () { timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, 3600); });
 
     var host = document.querySelector('main') || document.body;
     host.insertBefore(wrap, host.firstChild);
+  }
+
+  // Player vertical em tela cheia (stories) com som, setas e card do produto
+  function openStory(list, idx) {
+    ensureShopStyle();
+    var i = idx;
+    var ov = el('div'); ov.className = 'ecq-st-ov';
+    var frame = el('div'); frame.className = 'ecq-st-frame';
+    ov.appendChild(frame);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+
+    function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(e) { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') show(i + 1); else if (e.key === 'ArrowLeft') show(i - 1); }
+    document.addEventListener('keydown', onKey);
+
+    function show(n) {
+      i = (n % list.length + list.length) % list.length;
+      var item = list[i];
+      frame.innerHTML = '';
+
+      var isYt = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/.test(item.url);
+      var media, soundBtn;
+      if (isYt) {
+        media = miniVideo(item.url); // iframe
+        media.src = media.src + (media.src.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1';
+      } else {
+        media = document.createElement('video');
+        media.src = item.url; media.autoplay = true; media.loop = true; media.controls = false;
+        media.setAttribute('playsinline', ''); media.muted = false;
+        media.style.cssText = 'width:100%;height:100%;object-fit:cover;background:#000;display:block;';
+      }
+      frame.appendChild(media);
+      if (!isYt) { media.play().catch(function () { media.muted = true; media.play(); if (soundBtn) soundBtn.innerHTML = '🔇'; }); }
+
+      // botão de som (só vídeo mp4)
+      if (!isYt) {
+        soundBtn = el('button', '', '🔊'); soundBtn.className = 'ecq-st-btn'; soundBtn.style.left = '12px';
+        soundBtn.onclick = function (e) { e.stopPropagation(); media.muted = !media.muted; soundBtn.innerHTML = media.muted ? '🔇' : '🔊'; };
+        frame.appendChild(soundBtn);
+      }
+      // fechar
+      var x = el('button', '', '&times;'); x.className = 'ecq-st-btn'; x.style.right = '12px'; x.style.fontSize = '20px';
+      x.onclick = function (e) { e.stopPropagation(); close(); };
+      frame.appendChild(x);
+
+      // card do produto
+      if (item.productUrl || item.productId) {
+        var a = el('a'); a.className = 'ecq-st-prod'; a.href = item.productUrl || '#'; a.target = '_blank';
+        a.innerHTML = (item.productImage ? '<img src="' + item.productImage + '" style="width:46px;height:46px;border-radius:8px;object-fit:cover;flex-shrink:0;">' : '')
+          + '<div style="min-width:0;flex:1;"><div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(item.productName || 'Ver produto') + '</div>'
+          + (item.productPrice ? '<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px;">R$ ' + escapeHtml(item.productPrice) + '</div>' : '') + '</div>'
+          + '<span style="font-size:18px;color:#111;">›</span>';
+        frame.appendChild(a);
+      }
+    }
+
+    // setas (se houver mais de 1)
+    if (list.length > 1) {
+      var prev = el('button', '', '‹'); prev.className = 'ecq-st-nav'; prev.style.left = '8px';
+      prev.onclick = function (e) { e.stopPropagation(); show(i - 1); };
+      var next = el('button', '', '›'); next.className = 'ecq-st-nav'; next.style.right = '8px';
+      next.onclick = function (e) { e.stopPropagation(); show(i + 1); };
+      ov.appendChild(prev); ov.appendChild(next);
+    }
+
+    document.body.appendChild(ov);
+    show(idx);
   }
 
   function renderFloating(item) {

@@ -55,6 +55,7 @@
         if (cfg.checkout && cfg.checkout.enabled) initCheckout(cfg.checkout);
       } else {
         if (cfg.videos && cfg.videos.enabled) initVideos(cfg.videos);
+        if (cfg.shoppable && cfg.shoppable.enabled && cfg.shoppable.items && cfg.shoppable.items.length) initShoppable(cfg.shoppable);
         if (cfg.roulette && cfg.roulette.enabled && cfg.roulette.slices && cfg.roulette.slices.length) {
           initRoulette(cfg.roulette);
         }
@@ -211,6 +212,108 @@
       return vd;
     }
     return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // VÍDEOS SHOPPABLE (carrossel com produto + bolha flutuante)
+  // ═══════════════════════════════════════════════════════════
+  function initShoppable(sh) {
+    var items = sh.items || [];
+    var carousel = items.filter(function (i) { return i && i.url && (i.mode || 'carousel') === 'carousel'; });
+    var floating = items.filter(function (i) { return i && i.url && i.mode === 'floating'; });
+
+    if (carousel.length) renderCarousel(carousel);
+    floating.forEach(function (item) { if (matchesProduct(item)) renderFloating(item); });
+  }
+
+  // Vídeo "mini" (mp4 autoplay mudo em loop, ou iframe do YouTube)
+  function miniVideo(url) {
+    var yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
+    if (yt) {
+      var f = el('iframe');
+      f.src = 'https://www.youtube.com/embed/' + yt[1] + '?rel=0&playsinline=1';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture';
+      f.allowFullscreen = true;
+      f.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+      return f;
+    }
+    var v = el('video');
+    v.src = url; v.muted = true; v.autoplay = true; v.loop = true;
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', 'true');
+    v.setAttribute('disablepictureinpicture', '');
+    v.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;background:#000;';
+    return v;
+  }
+
+  // A página atual é a do produto deste item?
+  function matchesProduct(item) {
+    try {
+      if (window.LS && window.LS.product && String(window.LS.product.id) === String(item.productId)) return true;
+    } catch (e) {}
+    if (item.productUrl) {
+      try {
+        var path = new URL(item.productUrl).pathname.replace(/\/+$/, '');
+        if (path && location.pathname.replace(/\/+$/, '').indexOf(path) !== -1) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  function productCard(item) {
+    if (!item.productId && !item.productUrl) return el('div');
+    var a = el('a');
+    a.href = item.productUrl || '#';
+    a.target = '_blank';
+    a.style.cssText = 'display:flex;align-items:center;gap:8px;text-decoration:none;color:#222;border:1px solid #e3e3e3;border-radius:8px;padding:7px;margin-top:8px;background:#fff;';
+    a.innerHTML =
+      (item.productImage ? '<img src="' + item.productImage + '" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;">' : '') +
+      '<div style="min-width:0;flex:1;">' +
+        '<div style="font-size:12px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(item.productName || 'Ver produto') + '</div>' +
+        (item.productPrice ? '<div style="font-size:12px;font-weight:700;color:#333;margin-top:2px;">R$ ' + escapeHtml(item.productPrice) + '</div>' : '') +
+      '</div>';
+    return a;
+  }
+
+  function renderCarousel(list) {
+    var wrap = el('div', 'width:100%;box-sizing:border-box;padding:14px 10px;');
+    var track = el('div', 'display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:6px;');
+    list.forEach(function (item) {
+      var card = el('div', 'flex:0 0 auto;width:170px;scroll-snap-align:start;');
+      var vbox = el('div', 'width:170px;height:280px;border-radius:12px;overflow:hidden;background:#000;cursor:pointer;');
+      vbox.appendChild(miniVideo(item.url));
+      if (item.productUrl) vbox.onclick = function () { window.open(item.productUrl, '_blank'); };
+      card.appendChild(vbox);
+      card.appendChild(productCard(item));
+      track.appendChild(card);
+    });
+    wrap.appendChild(track);
+
+    var host = document.querySelector('main') || document.body;
+    host.insertBefore(wrap, host.firstChild);
+  }
+
+  function renderFloating(item) {
+    var box = el('div', 'position:fixed;right:18px;bottom:18px;z-index:2147481500;width:128px;font-family:system-ui,Arial;');
+    var bubble = el('div', 'position:relative;width:128px;height:128px;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer;');
+    var vid = miniVideo(item.url);
+    bubble.appendChild(vid);
+
+    // Clique alterna o som (se for <video>)
+    bubble.onclick = function () {
+      try { if (vid.tagName === 'VIDEO') { vid.muted = !vid.muted; if (!vid.muted) vid.play(); } } catch (e) {}
+    };
+
+    if (item.productName) {
+      var label = el('div', 'position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;', escapeHtml(item.productName));
+      bubble.appendChild(label);
+    }
+
+    var close = el('div', 'position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:2;', '&times;');
+    close.onclick = function (e) { e.stopPropagation(); box.remove(); };
+
+    box.appendChild(bubble);
+    box.appendChild(close);
+    document.body.appendChild(box);
   }
 
   // ═══════════════════════════════════════════════════════════

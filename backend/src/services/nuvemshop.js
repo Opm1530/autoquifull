@@ -143,6 +143,31 @@ export async function createCoupon(storeId, accessToken, coupon) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Products (seletor de produtos para vídeos shoppable)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Lista produtos da loja já normalizados para o seletor do painel.
+ * Retorna [{ id, name, price, image, url }].
+ */
+export async function listProducts(storeId, accessToken, { q = '', perPage = 40 } = {}) {
+  const params = new URLSearchParams({ per_page: String(perPage), published: 'true' });
+  if (q) params.set('q', q);
+
+  const res = await request('GET', storeId, accessToken, `/products?${params}`);
+  if (!res.ok) return [];
+
+  return (res.data || []).map((p) => {
+    const nameRaw = p.name;
+    const name = nameRaw && typeof nameRaw === 'object' ? (nameRaw.pt || Object.values(nameRaw)[0] || 'Produto') : (nameRaw || 'Produto');
+    const price = p.variants && p.variants[0] ? p.variants[0].price : '';
+    const image = p.images && p.images[0] ? p.images[0].src : '';
+    const url   = p.canonical_url || '';
+    return { id: String(p.id), name, price, image, url };
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // Orders
 // ─────────────────────────────────────────────────────────────
 

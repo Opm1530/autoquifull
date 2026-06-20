@@ -32,6 +32,7 @@ import {
   extractName,
   formatTotal,
   extractProducts,
+  listProducts,
 } from '../services/nuvemshop.js';
 
 const router = Router();
@@ -452,9 +453,10 @@ router.get('/instances/:companyId', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 
 const DEFAULT_STOREFRONT = {
-  roulette: { enabled: false, prizes: [], couponValidityDays: 7, minPrice: 0, maxUses: 1, capture: ['email'], theme: '#6366f1', title: 'Gire e ganhe um desconto!' },
-  videos:   { enabled: false, items: [] },
-  checkout: { enabled: false, timerMinutes: 0, banner: '', hidePayments: [], orderBump: null },
+  roulette:  { enabled: false, prizes: [], couponValidityDays: 7, minPrice: 0, maxUses: 1, capture: ['email'], theme: '#6366f1', title: 'Gire e ganhe um desconto!' },
+  videos:    { enabled: false, items: [] },
+  shoppable: { enabled: false, items: [] },
+  checkout:  { enabled: false, timerMinutes: 0, banner: '', hidePayments: [], orderBump: null },
 };
 
 router.get('/storefront/:companyId', async (req, res) => {
@@ -468,15 +470,28 @@ router.get('/storefront/:companyId', async (req, res) => {
 });
 
 router.post('/storefront/:companyId', async (req, res) => {
-  const { roulette, videos, checkout } = req.body || {};
+  const { roulette, videos, shoppable, checkout } = req.body || {};
   try {
     const db = getDb();
     const data = { updatedAt: new Date() };
-    if (roulette !== undefined) data.roulette = roulette;
-    if (videos   !== undefined) data.videos   = videos;
-    if (checkout !== undefined) data.checkout = checkout;
+    if (roulette  !== undefined) data.roulette  = roulette;
+    if (videos    !== undefined) data.videos    = videos;
+    if (shoppable !== undefined) data.shoppable = shoppable;
+    if (checkout  !== undefined) data.checkout  = checkout;
     await db.collection('ecommerce_storefront').doc(req.params.companyId).set(data, { merge: true });
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lista produtos da loja (para o seletor de vídeos shoppable)
+router.get('/products/:companyId', async (req, res) => {
+  try {
+    const integration = await getIntegration(req.params.companyId);
+    if (!integration) return res.json([]);
+    const products = await listProducts(integration.storeId, integration.accessToken, { q: req.query.q || '' });
+    res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -104,8 +104,9 @@ router.get('/config/:storeId', async (req, res) => {
         // Só os rótulos para desenhar a roda — sem pesos (não revela as chances)
         slices:  (roulette.prizes || []).map((p) => ({ label: p.label || '' })),
       },
-      videos:   cfg.videos   || { enabled: false, items: [] },
-      checkout: cfg.checkout || { enabled: false },
+      videos:    cfg.videos    || { enabled: false, items: [] },
+      shoppable: cfg.shoppable || { enabled: false, items: [] },
+      checkout:  cfg.checkout  || { enabled: false },
     });
   } catch (err) {
     log.error('Storefront', `GET config: ${err.message}`);

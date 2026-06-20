@@ -493,6 +493,9 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
       <button class="ec-tab" data-tab="videos" onclick="window.ecSwitchTab('videos')">
         <i class="fa-solid fa-video"></i> Vídeos
       </button>
+      <button class="ec-tab" data-tab="shoppable" onclick="window.ecSwitchTab('shoppable')">
+        <i class="fa-solid fa-clapperboard"></i> Shoppable
+      </button>
       <button class="ec-tab" data-tab="checkout" onclick="window.ecSwitchTab('checkout')">
         <i class="fa-solid fa-cart-shopping"></i> Checkout
       </button>
@@ -509,6 +512,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
     <div id="ec-tab-automations"></div>
     <div id="ec-tab-roulette" style="display:none;"></div>
     <div id="ec-tab-videos" style="display:none;"></div>
+    <div id="ec-tab-shoppable" style="display:none;"></div>
     <div id="ec-tab-checkout" style="display:none;"></div>
     <div id="ec-tab-history" style="display:none;"></div>
   `;
@@ -519,7 +523,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   (window as any).ecSwitchTab = (tab: string) => {
     document.querySelectorAll('.ec-tab').forEach((el) => el.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-    ['automations', 'roulette', 'videos', 'checkout', 'history'].forEach((t) => {
+    ['automations', 'roulette', 'videos', 'shoppable', 'checkout', 'history'].forEach((t) => {
       const el = document.getElementById(`ec-tab-${t}`);
       if (el) el.style.display = t === tab ? '' : 'none';
     });
@@ -783,19 +787,24 @@ async function loadHistory(companyId: string) {
 // Storefront: Roleta, Vídeos, Checkout
 // ─────────────────────────────────────────────────────────────
 
+let sfCompanyId = '';
+
 async function loadStorefront(companyId: string) {
+  sfCompanyId = companyId;
   const cfg = await fetch(`/ecommerce/storefront/${companyId}`).then((r) => r.json()).catch(() => ({}));
   renderRoulette(companyId, cfg.roulette || {});
   renderVideos(companyId, cfg.videos || {});
+  renderShoppable(companyId, cfg.shoppable || {});
   renderCheckout(companyId, cfg.checkout || {});
 
   (window as any).ecSaveStorefront = async (section: string) => {
     const btn = document.getElementById(`ec-sf-save-${section}`) as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`; }
     const body: any = {};
-    if (section === 'roulette') body.roulette = collectRoulette();
-    if (section === 'videos')   body.videos   = collectVideos();
-    if (section === 'checkout') body.checkout = collectCheckout();
+    if (section === 'roulette')  body.roulette  = collectRoulette();
+    if (section === 'videos')    body.videos    = collectVideos();
+    if (section === 'shoppable') body.shoppable = collectShoppable();
+    if (section === 'checkout')  body.checkout  = collectCheckout();
     try {
       await fetch(`/ecommerce/storefront/${companyId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -808,6 +817,8 @@ async function loadStorefront(companyId: string) {
 
   (window as any).ecAddPrize = () => addPrizeRow();
   (window as any).ecAddVideo = () => addVideoRow();
+  (window as any).ecAddShoppable = () => addShoppableRow();
+  (window as any).ecShoppablePick = (btn: HTMLElement) => openProductPicker(btn.closest('.ec-shop-row') as HTMLElement);
 }
 
 function field(label: string, inner: string) {
@@ -944,6 +955,139 @@ function collectVideos() {
     if (url) items.push({ url, title, position });
   });
   return { enabled: (document.getElementById('ec-vd-enabled') as HTMLInputElement)?.checked || false, items };
+}
+
+// ── Vídeos Shoppable (carrossel + bolha por produto) ──
+function renderShoppable(_companyId: string, sh: any) {
+  const c = document.getElementById('ec-tab-shoppable');
+  if (!c) return;
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      ${field('Ativar vídeos shoppable', `<label class="ec-toggle"><input type="checkbox" id="ec-sh-enabled" ${sh.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      <p style="font-size:.8rem;color:var(--text-dim);margin:.5rem 0 1rem;">
+        <strong>Carrossel</strong>: fileira de vídeos com o produto marcado embaixo. &nbsp;·&nbsp;
+        <strong>Flutuante</strong>: bolha de vídeo que aparece só na página do produto escolhido.
+      </p>
+      <div id="ec-sh-list"></div>
+      <button class="ec-btn ec-btn-secondary" onclick="window.ecAddShoppable()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar vídeo</button>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Link do vídeo: YouTube ou arquivo .mp4 (de preferência vertical, 9:16).</p>
+      <div style="margin-top:1.25rem;">${saveBtn('shoppable')}</div>
+    </div>`;
+  (sh.items || []).forEach((it: any) => addShoppableRow(it));
+}
+
+function addShoppableRow(it: any = {}) {
+  const host = document.getElementById('ec-sh-list');
+  if (!host) return;
+  const row = document.createElement('div');
+  row.className = 'ec-shop-row';
+  row.style.cssText = 'border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px;margin-bottom:10px;display:grid;grid-template-columns:1fr 130px auto 36px;gap:10px;align-items:center;';
+  // dados do produto guardados no dataset
+  row.dataset.productId    = it.productId || '';
+  row.dataset.productName  = it.productName || '';
+  row.dataset.productPrice = it.productPrice || '';
+  row.dataset.productImage = it.productImage || '';
+  row.dataset.productUrl   = it.productUrl || '';
+  const mode = it.mode || 'carousel';
+  row.innerHTML = `
+    <input class="ec-select ec-sh-url" placeholder="URL do vídeo (.mp4 ou YouTube)" value="${(it.url || '').replace(/"/g, '&quot;')}">
+    <select class="ec-select ec-sh-mode">
+      <option value="carousel" ${mode === 'carousel' ? 'selected' : ''}>Carrossel</option>
+      <option value="floating" ${mode === 'floating' ? 'selected' : ''}>Flutuante</option>
+    </select>
+    <div class="ec-sh-prod" style="display:flex;align-items:center;gap:8px;min-width:200px;">
+      ${productChip(it)}
+      <button class="ec-btn ec-btn-secondary" style="padding:.5rem .7rem;white-space:nowrap;" onclick="window.ecShoppablePick(this)"><i class="fa-solid fa-tag"></i> Produto</button>
+    </div>
+    <button class="ec-btn ec-btn-danger" style="padding:.5rem;" onclick="this.closest('.ec-shop-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+  host.appendChild(row);
+}
+
+function productChip(it: any) {
+  if (!it.productId) return `<span class="ec-sh-prod-label" style="font-size:.78rem;color:var(--text-dim);">Nenhum produto</span>`;
+  return `<span class="ec-sh-prod-label" style="display:inline-flex;align-items:center;gap:6px;font-size:.8rem;">
+      ${it.productImage ? `<img src="${it.productImage}" style="width:22px;height:22px;border-radius:4px;object-fit:cover;">` : ''}
+      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(it.productName || '').replace(/</g, '&lt;')}</span>
+    </span>`;
+}
+
+function collectShoppable() {
+  const items: any[] = [];
+  document.querySelectorAll('#ec-sh-list .ec-shop-row').forEach((row) => {
+    const r = row as HTMLElement;
+    const url = (r.querySelector('.ec-sh-url') as HTMLInputElement)?.value?.trim();
+    const mode = (r.querySelector('.ec-sh-mode') as HTMLSelectElement)?.value;
+    if (!url) return;
+    items.push({
+      url, mode,
+      productId:    r.dataset.productId || '',
+      productName:  r.dataset.productName || '',
+      productPrice: r.dataset.productPrice || '',
+      productImage: r.dataset.productImage || '',
+      productUrl:   r.dataset.productUrl || '',
+    });
+  });
+  return { enabled: (document.getElementById('ec-sh-enabled') as HTMLInputElement)?.checked || false, items };
+}
+
+// Seletor de produtos com busca na API da NuvemShop
+function openProductPicker(row: HTMLElement) {
+  if (!row) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:92%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:14px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;">
+        <input id="ec-pp-search" class="ec-select" placeholder="Buscar produto..." style="flex:1;" autofocus>
+        <button class="ec-btn ec-btn-secondary" id="ec-pp-close" style="padding:.5rem .8rem;">Fechar</button>
+      </div>
+      <div id="ec-pp-results" style="overflow:auto;padding:8px;">
+        <div style="text-align:center;color:var(--text-dim);padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ec-pp-close')!.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  const results = overlay.querySelector('#ec-pp-results') as HTMLElement;
+  const search = overlay.querySelector('#ec-pp-search') as HTMLInputElement;
+
+  const doSearch = async (q: string) => {
+    results.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+    const list = await fetch(`/ecommerce/products/${sfCompanyId}?q=${encodeURIComponent(q)}`).then((r) => r.json()).catch(() => []);
+    if (!Array.isArray(list) || !list.length) {
+      results.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:1rem;">Nenhum produto encontrado.</div>`;
+      return;
+    }
+    results.innerHTML = list.map((p: any) => `
+      <div class="ec-pp-item" data-id="${p.id}" data-name="${(p.name || '').replace(/"/g, '&quot;')}" data-price="${p.price || ''}" data-image="${p.image || ''}" data-url="${p.url || ''}"
+           style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;">
+        ${p.image ? `<img src="${p.image}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` : '<div style="width:40px;height:40px;border-radius:6px;background:var(--surface-hover);"></div>'}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(p.name || '').replace(/</g, '&lt;')}</div>
+          <div style="font-size:.78rem;color:var(--text-dim);">R$ ${p.price || '—'}</div>
+        </div>
+      </div>`).join('');
+    results.querySelectorAll('.ec-pp-item').forEach((item) => {
+      (item as HTMLElement).addEventListener('mouseenter', () => (item as HTMLElement).style.background = 'var(--surface-hover)');
+      (item as HTMLElement).addEventListener('mouseleave', () => (item as HTMLElement).style.background = '');
+      item.addEventListener('click', () => {
+        const d = (item as HTMLElement).dataset;
+        row.dataset.productId = d.id || '';
+        row.dataset.productName = d.name || '';
+        row.dataset.productPrice = d.price || '';
+        row.dataset.productImage = d.image || '';
+        row.dataset.productUrl = d.url || '';
+        const label = row.querySelector('.ec-sh-prod-label');
+        if (label) label.outerHTML = productChip({ productId: d.id, productName: d.name, productImage: d.image });
+        overlay.remove();
+      });
+    });
+  };
+
+  let t: any;
+  search.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => doSearch(search.value.trim()), 350); });
+  doSearch('');
 }
 
 // ── Checkout ──

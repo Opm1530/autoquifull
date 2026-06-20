@@ -30,6 +30,7 @@ import { toast } from './services/toast';
 import type { UserRole } from './services/auth';
 import { Webhooks } from './pages/Webhooks';
 import { Ecommerce, initEcommerce } from './pages/Ecommerce';
+import { Analytics, initAnalytics } from './pages/Analytics';
 import { QRPage } from './pages/QRPage';
 import { LandingPage } from './pages/LandingPage';
 import { BackendLogs } from './pages/BackendLogs';
@@ -210,6 +211,7 @@ class App {
         }
         // Run page-specific init after DOM is set
         if (effectivePath === '/ecommerce') initEcommerce();
+        if (effectivePath === '/analytics') initAnalytics();
     } catch (e) {
         console.error('Error loading page content:', e);
         const pageContainer = document.getElementById('page-content');
@@ -247,6 +249,7 @@ class App {
       case '/admin/companies': return 'Gestão de Clientes';
       case '/instances': return 'Instâncias';
       case '/configuration': return 'Configurações';
+      case '/analytics': return 'Analytics';
       case '/subscription': return 'Assinatura';
       case '/admin/webhooks': return 'Configuração do Backend';
       case '/admin/subscriptions': return 'Assinaturas';
@@ -275,6 +278,8 @@ class App {
         return Instances();
       case '/configuration':
         return Configuration();
+      case '/analytics':
+        return await Analytics();
       case '/subscription':
         return await Subscription();
       case '/admin/subscriptions':

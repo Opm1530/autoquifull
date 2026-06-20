@@ -33,6 +33,7 @@ import {
   formatTotal,
   extractProducts,
   listProducts,
+  listOrders,
 } from '../services/nuvemshop.js';
 
 const router = Router();
@@ -495,6 +496,89 @@ router.get('/products/:companyId', async (req, res) => {
     const products = await listProducts(integration.storeId, integration.accessToken, { q: req.query.q || '' });
     res.json(products);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Analytics (faturamento, ticket, recompra, LTV, retenção)
+// ─────────────────────────────────────────────────────────────
+
+function computeAnalytics(orders) {
+  const paid = orders.filter((o) => o.payment_status === 'paid' && o.status !== 'cancelled');
+
+  let revenue = 0;
+  const byCustomer = {};
+  const byMonth = {};
+  const byProduct = {};
+
+  for (const o of paid) {
+    const total = parseFloat(o.total || 0) || 0;
+    revenue += total;
+
+    const cid = o.customer?.id ? String(o.customer.id) : (o.customer?.email || `anon_${o.id}`);
+    byCustomer[cid] = (byCustomer[cid] || 0) + 1;
+
+    const month = (o.created_at || '').slice(0, 7);
+    if (month) {
+      byMonth[month] = byMonth[month] || { revenue: 0, count: 0 };
+      byMonth[month].revenue += total;
+      byMonth[month].count += 1;
+    }
+
+    (o.products || []).forEach((p) => {
+      const nameRaw = p.name;
+      const nm = nameRaw && typeof nameRaw === 'object' ? (nameRaw.pt || 'Produto') : (nameRaw || 'Produto');
+      const qty = Number(p.quantity || 1);
+      byProduct[nm] = byProduct[nm] || { qty: 0, revenue: 0 };
+      byProduct[nm].qty += qty;
+      byProduct[nm].revenue += (parseFloat(p.price || 0) || 0) * qty;
+    });
+  }
+
+  const orderCount = paid.length;
+  const customers = Object.keys(byCustomer).length;
+  const recurring = Object.values(byCustomer).filter((c) => c >= 2).length;
+
+  return {
+    revenue,
+    orderCount,
+    customers,
+    recurring,
+    newCustomers: customers - recurring,
+    repurchaseRate: customers ? (recurring / customers) * 100 : 0,
+    avgTicket: orderCount ? revenue / orderCount : 0,
+    ltv: customers ? revenue / customers : 0,
+    months: Object.keys(byMonth).sort().map((m) => ({ month: m, revenue: byMonth[m].revenue, count: byMonth[m].count })),
+    topProducts: Object.entries(byProduct).map(([name, v]) => ({ name, qty: v.qty, revenue: v.revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 5),
+  };
+}
+
+router.get('/analytics/:companyId', async (req, res) => {
+  try {
+    const integration = await getIntegration(req.params.companyId);
+    if (!integration) return res.json({ connected: false });
+
+    const days = Math.min(Math.max(parseInt(req.query.days || '90', 10), 7), 365);
+    const db = getDb();
+    const cacheRef = db.collection('ecommerce_analytics').doc(req.params.companyId);
+    const cacheSnap = await cacheRef.get();
+    const cache = cacheSnap.exists ? cacheSnap.data() : {};
+    const key = `d${days}`;
+
+    const cachedAt = cache[key]?.computedAt?.toMillis?.() || 0;
+    if (cache[key] && Date.now() - cachedAt < 30 * 60 * 1000) {
+      return res.json({ connected: true, cached: true, days, ...cache[key].data });
+    }
+
+    const sinceISO = new Date(Date.now() - days * 86400000).toISOString();
+    const orders = await listOrders(integration.storeId, integration.accessToken, { sinceISO });
+    const data = computeAnalytics(orders);
+
+    await cacheRef.set({ [key]: { data, computedAt: new Date() } }, { merge: true });
+    res.json({ connected: true, cached: false, days, ...data });
+  } catch (err) {
+    log.error('Ecommerce', `analytics: ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });

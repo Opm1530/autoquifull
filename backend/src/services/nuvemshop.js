@@ -184,6 +184,28 @@ export async function getOrdersByCustomer(storeId, accessToken, customerId) {
   return res.ok ? (res.data || []) : [];
 }
 
+/**
+ * Busca pedidos paginados desde uma data (para o Analytics).
+ * Retorna o array bruto de pedidos (campos enxutos).
+ */
+export async function listOrders(storeId, accessToken, { sinceISO, maxPages = 12, perPage = 200 } = {}) {
+  const all = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const params = new URLSearchParams({
+      per_page: String(perPage),
+      page: String(page),
+      fields: 'id,total,customer,created_at,payment_status,status,products',
+    });
+    if (sinceISO) params.set('created_at_min', sinceISO);
+
+    const res = await request('GET', storeId, accessToken, `/orders?${params}`);
+    if (!res.ok || !Array.isArray(res.data) || !res.data.length) break;
+    all.push(...res.data);
+    if (res.data.length < perPage) break;
+  }
+  return all;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Abandoned Checkouts (Carrinho Abandonado)
 // ─────────────────────────────────────────────────────────────

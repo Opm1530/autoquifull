@@ -18,6 +18,10 @@ export const OwnerSidebar = () => {
                     <span class="nav-icon"><i class="fa-solid fa-shop"></i></span>
                     <span class="nav-label">E-commerce</span>
                 </a>
+                <a href="/analytics" class="nav-item" data-label="Analytics">
+                    <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                    <span class="nav-label">Analytics</span>
+                </a>
 
                 <div class="nav-divider"></div>
                 <span class="nav-section-label">Configurações</span>

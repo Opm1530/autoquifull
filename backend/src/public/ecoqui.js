@@ -200,7 +200,7 @@
       var f = el('iframe');
       f.src = 'https://www.youtube.com/embed/' + yt[1];
       f.width = '100%'; f.height = '180'; f.frameBorder = '0';
-      f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture';
       f.allowFullscreen = true; f.style.cssText = 'display:block;width:100%;border:0;aspect-ratio:16/9;height:auto;';
       f.title = title || 'Vídeo';
       return f;

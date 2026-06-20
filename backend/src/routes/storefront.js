@@ -172,7 +172,13 @@ router.post('/roulette/claim', async (req, res) => {
     };
 
     const created = await createCoupon(integration.storeId, integration.accessToken, coupon);
-    if (!created) return res.status(502).json({ error: 'Falha ao gerar o cupom na loja' });
+    if (!created.ok) {
+      return res.status(502).json({
+        error: 'Falha ao gerar o cupom na loja',
+        status: created.status,
+        detail: (created.error || '').slice(0, 300),
+      });
+    }
 
     // Captura o lead (reusa o pipeline existente)
     const cleanPhone = (phone || '').replace(/\D/g, '');

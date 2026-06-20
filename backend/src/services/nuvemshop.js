@@ -136,10 +136,10 @@ export async function removeWebhooks(storeId, accessToken, callbackUrl) {
 export async function createCoupon(storeId, accessToken, coupon) {
   const res = await request('POST', storeId, accessToken, '/coupons', coupon);
   if (!res.ok) {
-    log.warn('NuvemShop', `createCoupon falhou: ${res.status || ''} ${res.error || ''}`.slice(0, 200));
-    return null;
+    log.warn('NuvemShop', `createCoupon falhou: ${res.status || ''} ${(res.error || '').slice(0, 300)}`);
+    return { ok: false, status: res.status, error: res.error };
   }
-  return res.data;
+  return { ok: true, data: res.data };
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -338,7 +338,7 @@
     if (document.getElementById('ecq-shop-style')) return;
     var st = document.createElement('style'); st.id = 'ecq-shop-style';
     st.textContent =
-      '@keyframes ecqPulseScale{0%,100%{transform:scale(1);box-shadow:0 0 0 1px rgba(0,0,0,.05)}50%{transform:scale(1.06);box-shadow:0 0 0 3px rgba(0,0,0,.14)}}'
+      '@keyframes ecqPulseScale{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{transform:scale(1.06);box-shadow:0 0 0 4px rgba(0,0,0,.22)}}'
       + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;}'
       + '.ecq-st-ov{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial;}'
       + '.ecq-st-frame{position:relative;width:min(420px,94vw);height:min(86vh,760px);background:#000;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}'
@@ -380,7 +380,7 @@
     });
 
     // Escala por distância do centro e posição cumulativa (espaçamento de borda constante)
-    function scaleFor(a) { return a === 0 ? CSCALE : a === 1 ? 0.9 : 0.76; }
+    function scaleFor(a) { return a === 0 ? CSCALE : 1; }
     function offsetPx(off) {
       var a = Math.abs(off), d = 0;
       for (var s = 1; s <= a; s++) d += CW * scaleFor(s - 1) / 2 + GAP + CW * scaleFor(s) / 2;
@@ -540,12 +540,9 @@
 
     var bar = el('div', 'position:fixed;left:0;right:0;' + (atBottom ? 'bottom:0;' : 'top:0;') +
       'z-index:2147481800;background:' + color + ';color:#fff;font-family:system-ui,Arial;font-size:13px;' +
-      'padding:8px 14px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.15);display:none;');
-    var msg = el('div', 'font-weight:700;margin-bottom:5px;');
-    var track = el('div', 'height:6px;border-radius:6px;background:rgba(255,255,255,.35);max-width:420px;margin:0 auto;overflow:hidden;');
-    var fill = el('div', 'height:100%;width:0%;background:#fff;border-radius:6px;transition:width .4s;');
-    track.appendChild(fill);
-    bar.appendChild(msg); bar.appendChild(track);
+      'padding:11px 14px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.15);display:none;');
+    var msg = el('div', 'font-weight:700;');
+    bar.appendChild(msg);
     document.body.appendChild(bar);
 
     function render() {
@@ -555,7 +552,6 @@
       if (subtotal >= threshold) {
         var reached = (r.msgReached || '🎉 Você desbloqueou {{recompensa}}!').replace(/\{\{recompensa\}\}/g, escapeHtml(r.rewardLabel || ''));
         msg.innerHTML = reached + (r.couponCode ? ' <strong style="text-decoration:underline;cursor:pointer;" title="Copiar">' + escapeHtml(r.couponCode) + '</strong>' : '');
-        fill.style.width = '100%';
         if (r.couponCode) {
           var strong = msg.querySelector('strong');
           if (strong) strong.onclick = function () { try { navigator.clipboard.writeText(r.couponCode); strong.textContent = 'Copiado!'; } catch (e) {} };
@@ -565,7 +561,6 @@
         msg.innerHTML = (r.msgBefore || 'Faltam {{falta}} para ganhar {{recompensa}}! 🎁')
           .replace(/\{\{falta\}\}/g, '<strong>' + brl(falta) + '</strong>')
           .replace(/\{\{recompensa\}\}/g, '<strong>' + escapeHtml(r.rewardLabel || '') + '</strong>');
-        fill.style.width = Math.max(4, Math.min(100, (subtotal / threshold) * 100)) + '%';
       }
     }
 

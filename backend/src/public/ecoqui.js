@@ -402,11 +402,14 @@
     stage.addEventListener('mouseenter', function () { clearInterval(timer); });
     stage.addEventListener('mouseleave', function () { timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, ROT); });
 
-    // Posição na página: dentro de um elemento escolhido (seletor) ou no topo
-    if (design.placement === 'selector' && design.placementSelector) {
+    // Posição: antes/depois de um elemento (id, classe ou caminho); senão, topo
+    if (design.placementSelector) {
       var target = null;
       try { target = document.querySelector(design.placementSelector); } catch (e) {}
-      if (target) { target.appendChild(wrap); return; }
+      if (target) {
+        target.insertAdjacentElement(design.placementPosition === 'after' ? 'afterend' : 'beforebegin', wrap);
+        return;
+      }
     }
     var host = document.querySelector('main') || document.body;
     host.insertBefore(wrap, host.firstChild);

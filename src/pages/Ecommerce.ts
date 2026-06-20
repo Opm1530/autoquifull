@@ -999,10 +999,10 @@ function renderShoppable(_companyId: string, sh: any) {
       </div>
 
       <div class="ec-auto-grid" style="margin-top:.75rem;">
-        ${field('Posição na página', `<select class="ec-select" id="ec-sh-placement"><option value="top" ${(d.placement || 'top') === 'top' ? 'selected' : ''}>Topo da página</option><option value="selector" ${d.placement === 'selector' ? 'selected' : ''}>Em um elemento (seletor)</option></select>`)}
-        ${field('Seletor do elemento', `<input class="ec-select" id="ec-sh-selector" placeholder="#ecoqui-carrossel" value="${(d.placementSelector || '').replace(/"/g, '&quot;')}">`)}
+        ${field('Elemento da página (id, classe ou caminho)', `<input class="ec-select" id="ec-sh-selector" placeholder="#section-x ou .product-grid" value="${(d.placementSelector || '').replace(/"/g, '&quot;')}">`)}
+        ${field('Posição relativa', `<select class="ec-select" id="ec-sh-placement"><option value="before" ${(d.placementPosition || 'before') === 'before' ? 'selected' : ''}>Antes do elemento</option><option value="after" ${d.placementPosition === 'after' ? 'selected' : ''}>Depois do elemento</option></select>`)}
       </div>
-      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Para escolher onde aparece: cole <code>&lt;div id="ecoqui-carrossel"&gt;&lt;/div&gt;</code> onde quiser na loja (numa página ou seção HTML da NuvemShop), selecione <strong>"Em um elemento"</strong> e use o seletor <code>#ecoqui-carrossel</code>. Se não encontrar o elemento, cai no topo automaticamente.</p>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Informe o <strong>id, classe ou caminho CSS</strong> de um elemento que já existe na loja (ex: <code>#destaques</code>, <code>.product-grid</code>) e escolha se o carrossel entra <strong>antes</strong> ou <strong>depois</strong> dele. Dica: na loja, clique com o botão direito → <em>Inspecionar</em> pra achar o id/classe. Se vazio ou não encontrado, aparece no topo.</p>
 
       <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:block;">Vídeos</label>
       <div id="ec-sh-list"></div>
@@ -1071,8 +1071,8 @@ function collectShoppable() {
     gap: parseInt((document.getElementById('ec-sh-gap') as HTMLInputElement)?.value || '208'),
     autoRotate: parseFloat((document.getElementById('ec-sh-rot') as HTMLInputElement)?.value || '3.6'),
     showProductCard: (document.getElementById('ec-sh-showcard') as HTMLInputElement)?.checked !== false,
-    placement: (document.getElementById('ec-sh-placement') as HTMLSelectElement)?.value || 'top',
     placementSelector: (document.getElementById('ec-sh-selector') as HTMLInputElement)?.value?.trim() || '',
+    placementPosition: (document.getElementById('ec-sh-placement') as HTMLSelectElement)?.value || 'before',
   };
   return { enabled: (document.getElementById('ec-sh-enabled') as HTMLInputElement)?.checked || false, items, design };
 }

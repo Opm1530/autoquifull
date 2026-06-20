@@ -338,8 +338,8 @@
     if (document.getElementById('ecq-shop-style')) return;
     var st = document.createElement('style'); st.id = 'ecq-shop-style';
     st.textContent =
-      '@keyframes ecqPulseBall{0%,100%{box-shadow:0 12px 30px rgba(0,0,0,.2)}50%{box-shadow:0 14px 44px rgba(0,0,0,.42)}}'
-      + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 12px 30px rgba(0,0,0,.2);}'
+      '@keyframes ecqPulseScale{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}'
+      + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;}'
       + '.ecq-st-ov{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial;}'
       + '.ecq-st-frame{position:relative;width:min(420px,94vw);height:min(86vh,760px);background:#000;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}'
       + '.ecq-st-btn{position:absolute;top:12px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;font-size:15px;}'
@@ -368,6 +368,7 @@
     list.forEach(function (item, i) {
       var card = el('div', 'position:absolute;top:8px;left:50%;width:' + CW + 'px;cursor:pointer;will-change:transform,opacity;');
       var vbox = el('div'); vbox.className = 'ecq-cf-vbox'; vbox.style.width = CW + 'px'; vbox.style.height = CH + 'px';
+      vbox.style.animation = 'ecqPulseScale 1.8s ease-in-out ' + (i * 0.15).toFixed(2) + 's infinite';
       vbox.appendChild(miniVideo(item.url));
       card.appendChild(vbox);
       if (showCard) card.appendChild(productCard(item));
@@ -392,7 +393,6 @@
         c.el.style.opacity = abs > 2 ? '0' : '1';
         c.el.style.zIndex = String(100 - abs);
         c.el.style.pointerEvents = abs > 2 ? 'none' : 'auto';
-        c.vbox.style.animation = off === 0 ? 'ecqPulseBall 1.9s infinite' : 'none';
         try { if (c.vid && c.vid.tagName === 'VIDEO') { if (off === 0) { c.vid.muted = true; c.vid.play(); } else { c.vid.pause(); } } } catch (e) {}
       }
     }
@@ -402,6 +402,12 @@
     stage.addEventListener('mouseenter', function () { clearInterval(timer); });
     stage.addEventListener('mouseleave', function () { timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, ROT); });
 
+    // Posição na página: dentro de um elemento escolhido (seletor) ou no topo
+    if (design.placement === 'selector' && design.placementSelector) {
+      var target = null;
+      try { target = document.querySelector(design.placementSelector); } catch (e) {}
+      if (target) { target.appendChild(wrap); return; }
+    }
     var host = document.querySelector('main') || document.body;
     host.insertBefore(wrap, host.firstChild);
   }

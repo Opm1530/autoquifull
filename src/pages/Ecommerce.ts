@@ -998,6 +998,12 @@ function renderShoppable(_companyId: string, sh: any) {
         ${field('Mostrar card do produto', `<label class="ec-toggle"><input type="checkbox" id="ec-sh-showcard" ${d.showProductCard !== false ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
       </div>
 
+      <div class="ec-auto-grid" style="margin-top:.75rem;">
+        ${field('Posição na página', `<select class="ec-select" id="ec-sh-placement"><option value="top" ${(d.placement || 'top') === 'top' ? 'selected' : ''}>Topo da página</option><option value="selector" ${d.placement === 'selector' ? 'selected' : ''}>Em um elemento (seletor)</option></select>`)}
+        ${field('Seletor do elemento', `<input class="ec-select" id="ec-sh-selector" placeholder="#ecoqui-carrossel" value="${(d.placementSelector || '').replace(/"/g, '&quot;')}">`)}
+      </div>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Para escolher onde aparece: cole <code>&lt;div id="ecoqui-carrossel"&gt;&lt;/div&gt;</code> onde quiser na loja (numa página ou seção HTML da NuvemShop), selecione <strong>"Em um elemento"</strong> e use o seletor <code>#ecoqui-carrossel</code>. Se não encontrar o elemento, cai no topo automaticamente.</p>
+
       <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:block;">Vídeos</label>
       <div id="ec-sh-list"></div>
       <button class="ec-btn ec-btn-secondary" onclick="window.ecAddShoppable()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar vídeo</button>
@@ -1065,6 +1071,8 @@ function collectShoppable() {
     gap: parseInt((document.getElementById('ec-sh-gap') as HTMLInputElement)?.value || '208'),
     autoRotate: parseFloat((document.getElementById('ec-sh-rot') as HTMLInputElement)?.value || '3.6'),
     showProductCard: (document.getElementById('ec-sh-showcard') as HTMLInputElement)?.checked !== false,
+    placement: (document.getElementById('ec-sh-placement') as HTMLSelectElement)?.value || 'top',
+    placementSelector: (document.getElementById('ec-sh-selector') as HTMLInputElement)?.value?.trim() || '',
   };
   return { enabled: (document.getElementById('ec-sh-enabled') as HTMLInputElement)?.checked || false, items, design };
 }

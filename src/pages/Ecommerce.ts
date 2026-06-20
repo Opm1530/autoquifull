@@ -861,6 +861,14 @@ function renderRoulette(_companyId: string, r: any) {
       <button class="ec-btn ec-btn-secondary" onclick="window.ecAddPrize()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar prêmio</button>
       <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Tipo "Nenhum" = fatia "tente de novo". Peso define a chance relativa de cada fatia.</p>
 
+      <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.5rem 0 .5rem;display:block;">Comportamento</label>
+      <div class="ec-auto-grid">
+        ${field('Mostrar botão flutuante', `<label class="ec-toggle"><input type="checkbox" id="ec-rl-showlauncher" ${r.showLauncher !== false ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Texto do botão', `<input class="ec-select" id="ec-rl-launchtext" value="${(r.launcherText || '🎁 Ganhe desconto').replace(/"/g, '&quot;')}">`)}
+        ${field('Posição do botão', `<select class="ec-select" id="ec-rl-launchpos"><option value="left" ${(r.launcherPos || 'left') === 'left' ? 'selected' : ''}>Esquerda</option><option value="right" ${r.launcherPos === 'right' ? 'selected' : ''}>Direita</option></select>`)}
+        ${field('Abrir sozinho após (s, 0=não)', `<input class="ec-select" type="number" min="0" step="0.5" id="ec-rl-autoopen" value="${r.autoOpenSeconds != null ? r.autoOpenSeconds : 2.5}">`)}
+      </div>
+
       <div style="margin-top:1.25rem;">${saveBtn('roulette')}</div>
     </div>`;
 
@@ -913,6 +921,10 @@ function collectRoulette() {
     minPrice: parseFloat((document.getElementById('ec-rl-minprice') as HTMLInputElement)?.value || '0'),
     maxUses: parseInt((document.getElementById('ec-rl-maxuses') as HTMLInputElement)?.value || '1'),
     capture: cap.length ? cap : ['email'],
+    showLauncher: (document.getElementById('ec-rl-showlauncher') as HTMLInputElement)?.checked || false,
+    launcherText: (document.getElementById('ec-rl-launchtext') as HTMLInputElement)?.value || '🎁 Ganhe desconto',
+    launcherPos: (document.getElementById('ec-rl-launchpos') as HTMLSelectElement)?.value || 'left',
+    autoOpenSeconds: parseFloat((document.getElementById('ec-rl-autoopen') as HTMLInputElement)?.value || '2.5'),
     prizes,
   };
 }
@@ -967,6 +979,7 @@ function collectVideos() {
 function renderShoppable(_companyId: string, sh: any) {
   const c = document.getElementById('ec-tab-shoppable');
   if (!c) return;
+  const d = sh.design || {};
   c.innerHTML = `
     <div class="ec-connect-card">
       ${field('Ativar vídeos shoppable', `<label class="ec-toggle"><input type="checkbox" id="ec-sh-enabled" ${sh.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
@@ -974,6 +987,18 @@ function renderShoppable(_companyId: string, sh: any) {
         <strong>Carrossel</strong>: fileira de vídeos com o produto marcado embaixo. &nbsp;·&nbsp;
         <strong>Flutuante</strong>: bolha de vídeo que aparece só na página do produto escolhido.
       </p>
+
+      <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:.25rem 0 .5rem;display:block;">Design do carrossel</label>
+      <div class="ec-auto-grid">
+        ${field('Largura do card (px)', `<input class="ec-select" type="number" min="100" id="ec-sh-cw" value="${d.cardWidth || 172}">`)}
+        ${field('Altura do card (px)', `<input class="ec-select" type="number" min="120" id="ec-sh-ch" value="${d.cardHeight || 300}">`)}
+        ${field('Escala do central', `<input class="ec-select" type="number" step="0.02" min="1" id="ec-sh-scale" value="${d.centerScale || 1.18}">`)}
+        ${field('Espaçamento (px)', `<input class="ec-select" type="number" min="60" id="ec-sh-gap" value="${d.gap || 208}">`)}
+        ${field('Troca automática (s)', `<input class="ec-select" type="number" step="0.5" min="1" id="ec-sh-rot" value="${d.autoRotate || 3.6}">`)}
+        ${field('Mostrar card do produto', `<label class="ec-toggle"><input type="checkbox" id="ec-sh-showcard" ${d.showProductCard !== false ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      </div>
+
+      <label style="font-size:0.78rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:block;">Vídeos</label>
       <div id="ec-sh-list"></div>
       <button class="ec-btn ec-btn-secondary" onclick="window.ecAddShoppable()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar vídeo</button>
       <p style="font-size:.75rem;color:var(--text-dim);margin-top:.5rem;">Link do vídeo: YouTube ou arquivo .mp4 (de preferência vertical, 9:16).</p>
@@ -1033,7 +1058,15 @@ function collectShoppable() {
       productUrl:   r.dataset.productUrl || '',
     });
   });
-  return { enabled: (document.getElementById('ec-sh-enabled') as HTMLInputElement)?.checked || false, items };
+  const design = {
+    cardWidth: parseInt((document.getElementById('ec-sh-cw') as HTMLInputElement)?.value || '172'),
+    cardHeight: parseInt((document.getElementById('ec-sh-ch') as HTMLInputElement)?.value || '300'),
+    centerScale: parseFloat((document.getElementById('ec-sh-scale') as HTMLInputElement)?.value || '1.18'),
+    gap: parseInt((document.getElementById('ec-sh-gap') as HTMLInputElement)?.value || '208'),
+    autoRotate: parseFloat((document.getElementById('ec-sh-rot') as HTMLInputElement)?.value || '3.6'),
+    showProductCard: (document.getElementById('ec-sh-showcard') as HTMLInputElement)?.checked !== false,
+  };
+  return { enabled: (document.getElementById('ec-sh-enabled') as HTMLInputElement)?.checked || false, items, design };
 }
 
 // Seletor de produtos com busca na API da NuvemShop

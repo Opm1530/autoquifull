@@ -101,6 +101,10 @@ router.get('/config/:storeId', async (req, res) => {
         title:   roulette.title || 'Gire e ganhe um desconto!',
         theme:   roulette.theme || '#6366f1',
         capture: roulette.capture || ['email'],
+        showLauncher:    roulette.showLauncher !== false,
+        launcherText:    roulette.launcherText || '🎁 Ganhe desconto',
+        launcherPos:     roulette.launcherPos || 'left',
+        autoOpenSeconds: roulette.autoOpenSeconds != null ? Number(roulette.autoOpenSeconds) : 2.5,
         // Só os rótulos para desenhar a roda — sem pesos (não revela as chances)
         slices:  (roulette.prizes || []).map((p) => ({ label: p.label || '' })),
       },

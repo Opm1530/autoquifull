@@ -206,15 +206,20 @@
 
     document.body.appendChild(overlay);
 
-    // Launcher flutuante + auto-abre 1x por sessão
-    var launcher = el('div'); launcher.className = 'ecq-launch';
-    launcher.innerHTML = '🎁 <span>Ganhe desconto</span>';
-    launcher.onclick = function () { overlay.style.display = 'flex'; };
-    document.body.appendChild(launcher);
+    // Launcher flutuante (configurável)
+    if (r.showLauncher !== false) {
+      var launcher = el('div'); launcher.className = 'ecq-launch';
+      launcher.textContent = r.launcherText || '🎁 Ganhe desconto';
+      if (r.launcherPos === 'right') { launcher.style.left = 'auto'; launcher.style.right = '18px'; }
+      launcher.onclick = function () { overlay.style.display = 'flex'; };
+      document.body.appendChild(launcher);
+    }
 
+    // Auto-abre 1x por sessão (0 = não abre sozinho)
     var alreadyWon = false;
     try { alreadyWon = !!localStorage.getItem(SEEN); } catch (e) {}
-    if (!alreadyWon) setTimeout(function () { overlay.style.display = 'flex'; }, 2500);
+    var autoOpen = r.autoOpenSeconds != null ? Number(r.autoOpenSeconds) : 2.5;
+    if (!alreadyWon && autoOpen > 0) setTimeout(function () { overlay.style.display = 'flex'; }, autoOpen * 1000);
   }
 
   function addInput(parent, type, ph) {
@@ -277,7 +282,7 @@
     var carousel = items.filter(function (i) { return i && i.url && (i.mode || 'carousel') === 'carousel'; });
     var floating = items.filter(function (i) { return i && i.url && i.mode === 'floating'; });
 
-    if (carousel.length) renderCarousel(carousel);
+    if (carousel.length) renderCarousel(carousel, sh.design || {});
     floating.forEach(function (item) { if (matchesProduct(item)) renderFloating(item); });
   }
 
@@ -344,23 +349,31 @@
   }
 
   // Coverflow: item central maior, auto-rotaciona, autoplay mudo no centro
-  function renderCarousel(list) {
+  function renderCarousel(list, design) {
     ensureShopStyle();
+    design = design || {};
+    var CW = Number(design.cardWidth) > 0 ? Number(design.cardWidth) : 172;
+    var CH = Number(design.cardHeight) > 0 ? Number(design.cardHeight) : 300;
+    var CSCALE = Number(design.centerScale) > 0 ? Number(design.centerScale) : 1.18;
+    var GAP = Number(design.gap) > 0 ? Number(design.gap) : 208;
+    var ROT = (Number(design.autoRotate) > 0 ? Number(design.autoRotate) : 3.6) * 1000;
+    var showCard = design.showProductCard !== false;
+    var stageH = Math.round(CH * CSCALE) + (showCard ? 96 : 24);
+
     var wrap = el('div', 'width:100%;box-sizing:border-box;padding:26px 0;display:flex;justify-content:center;overflow:hidden;');
-    var stage = el('div', 'position:relative;width:100%;max-width:1000px;height:440px;');
+    var stage = el('div', 'position:relative;width:100%;max-width:1000px;height:' + stageH + 'px;');
     wrap.appendChild(stage);
 
-    var nlen = list.length, GAP = 208, cards = [];
+    var nlen = list.length, cards = [];
     list.forEach(function (item, i) {
-      var card = el('div', 'position:absolute;top:8px;left:50%;width:172px;cursor:pointer;will-change:transform,opacity;');
-      var vbox = el('div'); vbox.className = 'ecq-cf-vbox';
-      var vid = miniVideo(item.url);
-      vbox.appendChild(vid);
+      var card = el('div', 'position:absolute;top:8px;left:50%;width:' + CW + 'px;cursor:pointer;will-change:transform,opacity;');
+      var vbox = el('div'); vbox.className = 'ecq-cf-vbox'; vbox.style.width = CW + 'px'; vbox.style.height = CH + 'px';
+      vbox.appendChild(miniVideo(item.url));
       card.appendChild(vbox);
-      card.appendChild(productCard(item));
+      if (showCard) card.appendChild(productCard(item));
       card.onclick = function () { openStory(list, i); };
       stage.appendChild(card);
-      cards.push({ el: card, vid: vid, vbox: vbox, off: null });
+      cards.push({ el: card, vid: vbox.firstChild, vbox: vbox, off: null });
     });
 
     var center = 0;
@@ -374,20 +387,20 @@
         var jumped = c.off != null && Math.abs(off - c.off) > 2;
         c.el.style.transition = jumped ? 'none' : 'transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s';
         c.off = off;
-        var scale = off === 0 ? 1.18 : (abs === 1 ? 0.9 : 0.76);
+        var scale = off === 0 ? CSCALE : (abs === 1 ? 0.9 : 0.76);
         c.el.style.transform = 'translateX(calc(-50% + ' + (off * GAP) + 'px)) scale(' + scale + ')';
         c.el.style.opacity = abs > 2 ? '0' : '1';
         c.el.style.zIndex = String(100 - abs);
         c.el.style.pointerEvents = abs > 2 ? 'none' : 'auto';
         c.vbox.style.animation = off === 0 ? 'ecqPulseBall 1.9s infinite' : 'none';
-        try { if (c.vid.tagName === 'VIDEO') { if (off === 0) { c.vid.muted = true; c.vid.play(); } else { c.vid.pause(); } } } catch (e) {}
+        try { if (c.vid && c.vid.tagName === 'VIDEO') { if (off === 0) { c.vid.muted = true; c.vid.play(); } else { c.vid.pause(); } } } catch (e) {}
       }
     }
     layout();
 
-    var timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, 3600);
+    var timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, ROT);
     stage.addEventListener('mouseenter', function () { clearInterval(timer); });
-    stage.addEventListener('mouseleave', function () { timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, 3600); });
+    stage.addEventListener('mouseleave', function () { timer = setInterval(function () { center = (center + 1) % nlen; layout(); }, ROT); });
 
     var host = document.querySelector('main') || document.body;
     host.insertBefore(wrap, host.firstChild);

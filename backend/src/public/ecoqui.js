@@ -338,7 +338,8 @@
     if (document.getElementById('ecq-shop-style')) return;
     var st = document.createElement('style'); st.id = 'ecq-shop-style';
     st.textContent =
-      '@keyframes ecqPulseScale{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{transform:scale(1.06);box-shadow:0 0 0 4px rgba(0,0,0,.22)}}'
+      '@keyframes ecqScale{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}'
+      + '@keyframes ecqBorder{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 4px rgba(0,0,0,.22)}}'
       + '.ecq-cf-vbox{width:172px;height:300px;border-radius:14px;overflow:hidden;background:#000;}'
       + '.ecq-st-ov{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial;}'
       + '.ecq-st-frame{position:relative;width:min(420px,94vw);height:min(86vh,760px);background:#000;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}'
@@ -369,11 +370,16 @@
     var nlen = list.length, cards = [];
     list.forEach(function (item, i) {
       var card = el('div', 'position:absolute;top:8px;left:50%;width:' + CW + 'px;cursor:pointer;will-change:transform,opacity;');
+      var delay = (i * 0.15).toFixed(2);
+      // wrapper interno: vídeo + card do produto pulsam juntos (scale), só o vídeo ganha a borda
+      var inner = el('div');
+      inner.style.animation = 'ecqScale 1.8s ease-in-out ' + delay + 's infinite';
       var vbox = el('div'); vbox.className = 'ecq-cf-vbox'; vbox.style.width = CW + 'px'; vbox.style.height = CH + 'px';
-      vbox.style.animation = 'ecqPulseScale 1.8s ease-in-out ' + (i * 0.15).toFixed(2) + 's infinite';
+      vbox.style.animation = 'ecqBorder 1.8s ease-in-out ' + delay + 's infinite';
       vbox.appendChild(miniVideo(item.url));
-      card.appendChild(vbox);
-      if (showCard) card.appendChild(productCard(item));
+      inner.appendChild(vbox);
+      if (showCard) inner.appendChild(productCard(item));
+      card.appendChild(inner);
       card.onclick = function () { openStory(list, i); };
       stage.appendChild(card);
       cards.push({ el: card, vid: vbox.firstChild, vbox: vbox, off: null });

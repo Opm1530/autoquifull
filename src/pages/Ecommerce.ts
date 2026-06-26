@@ -499,6 +499,9 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
       <button class="ec-tab" data-tab="reward" onclick="window.ecSwitchTab('reward')">
         <i class="fa-solid fa-gift"></i> Brinde
       </button>
+      <button class="ec-tab" data-tab="product" onclick="window.ecSwitchTab('product')">
+        <i class="fa-solid fa-box-open"></i> Página do Produto
+      </button>
       <button class="ec-tab" data-tab="checkout" onclick="window.ecSwitchTab('checkout')">
         <i class="fa-solid fa-cart-shopping"></i> Checkout
       </button>
@@ -517,6 +520,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
     <div id="ec-tab-videos" style="display:none;"></div>
     <div id="ec-tab-shoppable" style="display:none;"></div>
     <div id="ec-tab-reward" style="display:none;"></div>
+    <div id="ec-tab-product" style="display:none;"></div>
     <div id="ec-tab-checkout" style="display:none;"></div>
     <div id="ec-tab-history" style="display:none;"></div>
   `;
@@ -527,7 +531,7 @@ function renderConnected(companyId: string, integration: any, instances: any[], 
   (window as any).ecSwitchTab = (tab: string) => {
     document.querySelectorAll('.ec-tab').forEach((el) => el.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-    ['automations', 'roulette', 'videos', 'shoppable', 'reward', 'checkout', 'history'].forEach((t) => {
+    ['automations', 'roulette', 'videos', 'shoppable', 'reward', 'product', 'checkout', 'history'].forEach((t) => {
       const el = document.getElementById(`ec-tab-${t}`);
       if (el) el.style.display = t === tab ? '' : 'none';
     });
@@ -800,6 +804,7 @@ async function loadStorefront(companyId: string) {
   renderVideos(companyId, cfg.videos || {});
   renderShoppable(companyId, cfg.shoppable || {});
   renderReward(companyId, cfg.reward || {});
+  renderProduct(companyId, cfg.product || {});
   renderCheckout(companyId, cfg.checkout || {});
 
   (window as any).ecSaveStorefront = async (section: string) => {
@@ -810,6 +815,7 @@ async function loadStorefront(companyId: string) {
     if (section === 'videos')    body.videos    = collectVideos();
     if (section === 'shoppable') body.shoppable = collectShoppable();
     if (section === 'reward')    body.reward    = collectReward();
+    if (section === 'product')   body.product   = collectProduct();
     if (section === 'checkout')  body.checkout  = collectCheckout();
     try {
       await fetch(`/ecommerce/storefront/${companyId}`, {
@@ -823,6 +829,7 @@ async function loadStorefront(companyId: string) {
 
   (window as any).ecAddPrize = () => addPrizeRow();
   (window as any).ecAddVideo = () => addVideoRow();
+  (window as any).ecAddPgItem = () => addPgItemRow();
   (window as any).ecAddShoppable = () => addShoppableRow();
   (window as any).ecShoppablePick = (btn: HTMLElement) => openProductPicker(btn.closest('.ec-shop-row') as HTMLElement);
 }
@@ -1171,6 +1178,100 @@ function collectReward() {
     position: (document.getElementById('ec-rw-position') as HTMLSelectElement)?.value || 'top',
     msgBefore: (document.getElementById('ec-rw-before') as HTMLInputElement)?.value || '',
     msgReached: (document.getElementById('ec-rw-reached') as HTMLInputElement)?.value || '',
+  };
+}
+
+// ── Página do Produto (visualizando, estoque, prova social, galeria) ──
+function renderProduct(_companyId: string, p: any) {
+  const c = document.getElementById('ec-tab-product');
+  if (!c) return;
+  const v = p.viewers || {}, s = p.stock || {}, so = p.social || {}, g = p.gallery || {};
+  const sub = (t: string) => `<label style="font-size:0.8rem;font-weight:700;color:var(--text-main);margin:1.5rem 0 .5rem;display:block;">${t}</label>`;
+  c.innerHTML = `
+    <div class="ec-connect-card">
+      <div class="ec-auto-grid">
+        ${field('Ativar widgets da página do produto', `<label class="ec-toggle"><input type="checkbox" id="ec-pg-enabled" ${p.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+      </div>
+      <div class="ec-auto-grid" style="margin-top:.75rem;">
+        ${field('Elemento do botão de comprar (id/classe)', `<input class="ec-select" id="ec-pg-btnsel" placeholder=".js-addtocart" value="${(p.buttonSelector || '').replace(/"/g, '&quot;')}">`)}
+        ${field('Posição', `<select class="ec-select" id="ec-pg-btnpos"><option value="before" ${(p.buttonPosition || 'before') === 'before' ? 'selected' : ''}>Acima do botão</option><option value="after" ${p.buttonPosition === 'after' ? 'selected' : ''}>Abaixo do botão</option></select>`)}
+      </div>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.4rem;">Vazio = tenta achar o botão de compra automaticamente.</p>
+
+      ${sub('👁️ Visualizando agora (número variável)')}
+      <div class="ec-auto-grid">
+        ${field('Ativar', `<label class="ec-toggle"><input type="checkbox" id="ec-pg-v-en" ${v.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Mínimo', `<input class="ec-select" type="number" min="1" id="ec-pg-v-min" value="${v.min ?? 10}">`)}
+        ${field('Máximo', `<input class="ec-select" type="number" min="1" id="ec-pg-v-max" value="${v.max ?? 40}">`)}
+      </div>
+      ${field('Texto (use {{n}} para o número)', `<input class="ec-select" id="ec-pg-v-text" value="${(v.text || '🔥 {{n}} pessoas estão vendo este produto agora').replace(/"/g, '&quot;')}">`)}
+
+      ${sub('⚡ Estoque baixo (estoque real)')}
+      <div class="ec-auto-grid">
+        ${field('Ativar', `<label class="ec-toggle"><input type="checkbox" id="ec-pg-s-en" ${s.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Mostrar quando ≤', `<input class="ec-select" type="number" min="1" id="ec-pg-s-th" value="${s.threshold ?? 10}">`)}
+      </div>
+      ${field('Texto (use {{estoque}})', `<input class="ec-select" id="ec-pg-s-text" value="${(s.text || '⚡ Restam apenas {{estoque}} unidades!').replace(/"/g, '&quot;')}">`)}
+
+      ${sub('❤️ Prova social (curtidas)')}
+      <div class="ec-auto-grid">
+        ${field('Ativar', `<label class="ec-toggle"><input type="checkbox" id="ec-pg-so-en" ${so.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Contador ({{contador}})', `<input class="ec-select" type="number" min="0" id="ec-pg-so-count" value="${so.counter ?? 2000}">`)}
+      </div>
+      ${field('Texto livre (use {{contador}})', `<input class="ec-select" id="ec-pg-so-text" value="${(so.text || '❤️ Ana e mais {{contador}} pessoas curtem este produto').replace(/"/g, '&quot;')}">`)}
+
+      ${sub('🎬 Galeria no rodapé (pessoas usando — vídeo ou imagem)')}
+      <div class="ec-auto-grid">
+        ${field('Ativar', `<label class="ec-toggle"><input type="checkbox" id="ec-pg-g-en" ${g.enabled ? 'checked' : ''}><span class="ec-toggle-slider"></span></label>`)}
+        ${field('Título', `<input class="ec-select" id="ec-pg-g-title" value="${(g.title || 'Quem usa, ama 💚').replace(/"/g, '&quot;')}">`)}
+      </div>
+      <div id="ec-pg-list" style="margin-top:.5rem;"></div>
+      <button class="ec-btn ec-btn-secondary" onclick="window.ecAddPgItem()" style="margin-top:.5rem;"><i class="fa-solid fa-plus"></i> Adicionar mídia</button>
+      <p style="font-size:.75rem;color:var(--text-dim);margin-top:.4rem;">Até 5 itens. Link de imagem (.jpg/.png) ou vídeo (.mp4/YouTube). Desktop = fileira de 5; mobile = carrossel.</p>
+      <div class="ec-auto-grid" style="margin-top:.5rem;">
+        ${field('Elemento da página (opcional)', `<input class="ec-select" id="ec-pg-g-sel" placeholder="footer ou #avaliacoes" value="${(g.placementSelector || '').replace(/"/g, '&quot;')}">`)}
+        ${field('Posição', `<select class="ec-select" id="ec-pg-g-pos"><option value="before" ${(g.placementPosition || 'after') === 'before' ? 'selected' : ''}>Antes</option><option value="after" ${(g.placementPosition || 'after') === 'after' ? 'selected' : ''}>Depois</option></select>`)}
+      </div>
+
+      <div style="margin-top:1.5rem;">${saveBtn('product')}</div>
+    </div>`;
+  (g.items || []).forEach((it: any) => addPgItemRow(it));
+}
+
+function addPgItemRow(it: any = {}) {
+  const host = document.getElementById('ec-pg-list');
+  if (!host) return;
+  if (host.querySelectorAll('.ec-pg-row').length >= 5) return;
+  const row = document.createElement('div');
+  row.className = 'ec-pg-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 36px;gap:8px;margin-bottom:8px;align-items:center;';
+  row.innerHTML = `
+    <input class="ec-select ec-pg-url" placeholder="URL da imagem ou vídeo" value="${(it.url || '').replace(/"/g, '&quot;')}">
+    <button class="ec-btn ec-btn-danger" style="padding:.5rem;" onclick="this.closest('.ec-pg-row').remove()"><i class="fa-solid fa-trash"></i></button>`;
+  host.appendChild(row);
+}
+
+function collectProduct() {
+  const items: any[] = [];
+  document.querySelectorAll('#ec-pg-list .ec-pg-row').forEach((row) => {
+    const url = (row.querySelector('.ec-pg-url') as HTMLInputElement)?.value?.trim();
+    if (url) items.push({ url });
+  });
+  const val = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
+  const num = (id: string, d: number) => parseInt(val(id) || String(d));
+  const chk = (id: string) => (document.getElementById(id) as HTMLInputElement)?.checked || false;
+  return {
+    enabled: chk('ec-pg-enabled'),
+    buttonSelector: val('ec-pg-btnsel')?.trim() || '',
+    buttonPosition: (document.getElementById('ec-pg-btnpos') as HTMLSelectElement)?.value || 'before',
+    viewers: { enabled: chk('ec-pg-v-en'), min: num('ec-pg-v-min', 10), max: num('ec-pg-v-max', 40), text: val('ec-pg-v-text') || '' },
+    stock: { enabled: chk('ec-pg-s-en'), threshold: num('ec-pg-s-th', 10), text: val('ec-pg-s-text') || '' },
+    social: { enabled: chk('ec-pg-so-en'), counter: num('ec-pg-so-count', 0), text: val('ec-pg-so-text') || '' },
+    gallery: {
+      enabled: chk('ec-pg-g-en'), title: val('ec-pg-g-title') || '', items,
+      placementSelector: val('ec-pg-g-sel')?.trim() || '',
+      placementPosition: (document.getElementById('ec-pg-g-pos') as HTMLSelectElement)?.value || 'after',
+    },
   };
 }
 

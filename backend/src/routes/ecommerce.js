@@ -458,6 +458,13 @@ const DEFAULT_STOREFRONT = {
   videos:    { enabled: false, items: [] },
   shoppable: { enabled: false, items: [] },
   reward:    { enabled: false, threshold: 0, rewardLabel: 'Frete grátis', couponCode: '', msgBefore: 'Faltam {{falta}} para ganhar {{recompensa}}! 🎁', msgReached: '🎉 Você desbloqueou {{recompensa}}!', color: '#10b981', position: 'top' },
+  product:   {
+    enabled: false, buttonSelector: '', buttonPosition: 'before',
+    viewers: { enabled: false, min: 10, max: 40, text: '🔥 {{n}} pessoas estão vendo este produto agora' },
+    stock:   { enabled: false, threshold: 10, text: '⚡ Restam apenas {{estoque}} unidades!' },
+    social:  { enabled: false, text: '❤️ Ana e mais {{contador}} pessoas curtem este produto', counter: 2000 },
+    gallery: { enabled: false, title: 'Quem usa, ama 💚', items: [], placementSelector: '', placementPosition: 'after' },
+  },
   checkout:  { enabled: false, timerMinutes: 0, banner: '', hidePayments: [], orderBump: null },
 };
 
@@ -472,7 +479,7 @@ router.get('/storefront/:companyId', async (req, res) => {
 });
 
 router.post('/storefront/:companyId', async (req, res) => {
-  const { roulette, videos, shoppable, reward, checkout } = req.body || {};
+  const { roulette, videos, shoppable, reward, product, checkout } = req.body || {};
   try {
     const db = getDb();
     const data = { updatedAt: new Date() };
@@ -480,6 +487,7 @@ router.post('/storefront/:companyId', async (req, res) => {
     if (videos    !== undefined) data.videos    = videos;
     if (shoppable !== undefined) data.shoppable = shoppable;
     if (reward    !== undefined) data.reward    = reward;
+    if (product   !== undefined) data.product   = product;
     if (checkout  !== undefined) data.checkout  = checkout;
     await db.collection('ecommerce_storefront').doc(req.params.companyId).set(data, { merge: true });
     res.json({ ok: true });

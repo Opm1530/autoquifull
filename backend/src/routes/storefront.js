@@ -82,6 +82,13 @@ router.get('/ecoqui.js', (_req, res) => {
   res.sendFile(join(__dirname, '../public/ecoqui.js'));
 });
 
+// Versão NubeSDK (vitrine nova / tema Patagonia) — buildada em nubesdk/, upload manual no Partner Portal
+router.get('/ecoqui-nubesdk.js', (_req, res) => {
+  res.type('application/javascript');
+  res.set('Cache-Control', 'public, max-age=300');
+  res.sendFile(join(__dirname, '../public/ecoqui-nubesdk.js'));
+});
+
 // ─────────────────────────────────────────────────────────────
 // GET /storefront/config/:storeId  — config pública por loja
 // ─────────────────────────────────────────────────────────────

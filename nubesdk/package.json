@@ -1,0 +1,17 @@
+{
+  "name": "ecoqui-nubesdk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@tiendanube/nube-sdk-types": "^0.89.1",
+    "@tiendanube/nube-sdk-ui": "^0.21.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2"
+  }
+}
